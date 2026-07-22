@@ -57,17 +57,20 @@ the seeded members.
 ### Environment variables (backend/.env — all optional)
 
 ```
-ANTHROPIC_API_KEY=...    # Claude for warm summaries, extraction, Companion replies
 DEEPGRAM_API_KEY=...     # speech-to-text for voice recording
+OPENAI_API_KEY=...       # LLM for summaries, extraction, Companion replies
+OPENAI_MODEL=gpt-5.4-mini
+ANTHROPIC_API_KEY=...    # alternative LLM provider (OpenAI wins if both set)
 JWT_SECRET=change-me
 DATABASE_URL=sqlite:///aangan.db
 CHROMA_PATH=./chroma_data
 ```
 
-**No keys? Everything still runs.** Without `ANTHROPIC_API_KEY` the agents use
-warm deterministic fallbacks (English + Hindi); without `DEEPGRAM_API_KEY`
-voice upload returns a friendly note and the app offers typing instead. Add
-keys later to light up live transcription and naturally-phrased replies.
+**No keys? Everything still runs.** Without an LLM key the agents use warm
+deterministic fallbacks (English + Hindi); without `DEEPGRAM_API_KEY` voice
+upload returns a friendly note and the app offers typing instead. If the
+configured `OPENAI_MODEL` isn't available to your account, the app falls back
+through `gpt-5-mini` / `gpt-5-nano` / `gpt-4o-mini` automatically.
 
 ## The seeded family
 

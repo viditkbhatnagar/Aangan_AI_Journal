@@ -49,6 +49,21 @@ def db():
 
 
 @pytest.fixture(autouse=True)
+def keyless_mode(monkeypatch):
+    """Tests always run the deterministic no-key paths, regardless of any
+    keys in backend/.env."""
+    from agents import llm
+    from config import settings as app_settings
+
+    monkeypatch.setattr(app_settings, "anthropic_api_key", None)
+    monkeypatch.setattr(app_settings, "openai_api_key", None)
+    monkeypatch.setattr(app_settings, "deepgram_api_key", None)
+    llm.reset_for_tests()
+    yield
+    llm.reset_for_tests()
+
+
+@pytest.fixture(autouse=True)
 def vector_store():
     embeddings.set_embedder(fake_embed)
     client = chromadb.EphemeralClient()
