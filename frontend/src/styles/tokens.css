@@ -1,0 +1,41 @@
+/* Aangan design tokens — "courtyard at dusk".
+   Warm plaster, terracotta, deep haveli teal, marigold. */
+:root {
+  --color-surface: #f7f1e5;
+  --color-surface-raised: #fffaf0;
+  --color-surface-sunken: #efe6d4;
+  --color-text: #22403c;
+  --color-text-soft: #5b6f6c;
+  --color-primary: #c4622d;
+  --color-primary-deep: #a34d1f;
+  --color-accent: #e9a319;
+  --color-teal: #1f4e4a;
+  --color-rose: #d98e73;
+  --color-danger: #b3402e;
+  --color-line: rgba(31, 78, 74, 0.14);
+
+  --font-display: 'Fraunces', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --font-body: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+  --text-hero: clamp(2.2rem, 1.4rem + 3.4vw, 3.6rem);
+
+  --radius: 1.25rem;
+  --radius-sm: 0.75rem;
+  --radius-arch: 50% 50% 1.25rem 1.25rem / 42% 42% 1.25rem 1.25rem;
+
+  --shadow-soft: 0 1px 2px rgba(34, 64, 60, 0.06), 0 10px 30px -12px rgba(34, 64, 60, 0.22);
+  --shadow-lift: 0 2px 4px rgba(34, 64, 60, 0.08), 0 18px 44px -16px rgba(163, 77, 31, 0.35);
+
+  --space-1: 0.375rem;
+  --space-2: 0.75rem;
+  --space-3: 1.25rem;
+  --space-4: 2rem;
+  --space-5: 3.25rem;
+
+  --duration-fast: 150ms;
+  --duration-normal: 320ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}

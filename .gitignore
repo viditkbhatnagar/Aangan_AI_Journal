@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# App data (local, private)
+backend/aangan.db
+backend/chroma_data/
+backend/data/audio/*
+backend/data/actions/*
+!backend/data/audio/.gitkeep
+!backend/data/actions/.gitkeep
+
+# Env / secrets
+.env
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+*.log
