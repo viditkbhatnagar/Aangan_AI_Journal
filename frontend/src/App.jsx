@@ -3,10 +3,12 @@ import { useAuth } from './auth';
 import Welcome from './screens/Welcome';
 import Home from './screens/Home';
 import Journal from './screens/Journal';
+import Ask from './screens/Ask';
 
 const NAV = [
   { to: '/', icon: '🏡', label: 'Home' },
   { to: '/journal', icon: '📓', label: 'Journal' },
+  { to: '/ask', icon: '💬', label: 'Ask' },
 ];
 
 export default function App() {
@@ -23,6 +25,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/journal" element={<Journal />} />
+        <Route path="/ask" element={<Ask />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <nav className="bottom-nav" aria-label="Main navigation">
