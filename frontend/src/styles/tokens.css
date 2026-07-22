@@ -1,5 +1,13 @@
 /* Aangan design tokens — "courtyard at dusk".
    Warm plaster, terracotta, deep haveli teal, marigold. */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-var.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --color-surface: #f7f1e5;
   --color-surface-raised: #fffaf0;

@@ -15,9 +15,30 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.15; color: var(--color-teal); }
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--color-teal);
+  font-variation-settings: 'opsz' 60;
+}
 h1 { font-size: var(--text-xl); }
 h2 { font-size: var(--text-lg); }
+
+/* one staged, memorable load moment — content rises gently into place */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stack-lg > * {
+  animation: rise var(--duration-normal) var(--ease-out-expo) backwards;
+}
+.stack-lg > *:nth-child(1) { animation-delay: 0ms; }
+.stack-lg > *:nth-child(2) { animation-delay: 60ms; }
+.stack-lg > *:nth-child(3) { animation-delay: 120ms; }
+.stack-lg > *:nth-child(4) { animation-delay: 180ms; }
+.stack-lg > *:nth-child(n+5) { animation-delay: 240ms; }
 
 a { color: var(--color-primary-deep); }
 
@@ -26,8 +47,10 @@ a { color: var(--color-primary-deep); }
 .brand {
   font-family: var(--font-display);
   font-size: 1.35rem;
+  font-weight: 600;
   color: var(--color-primary-deep);
   letter-spacing: 0.01em;
+  font-variation-settings: 'opsz' 40;
 }
 .brand .hindi { color: var(--color-accent); margin-left: 0.4rem; font-size: 1.05rem; }
 
@@ -161,7 +184,9 @@ label { display: block; font-size: 0.85rem; color: var(--color-text-soft); margi
 .talk-button {
   width: 9rem; height: 9rem;
   border-radius: 50%;
-  font-size: 1.02rem;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  letter-spacing: 0.01em;
   background: radial-gradient(circle at 32% 28%, #d9793f, var(--color-primary) 65%);
   box-shadow: var(--shadow-lift);
   user-select: none;
