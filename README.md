@@ -59,6 +59,8 @@ the seeded members.
 ```
 DEEPGRAM_API_KEY=...     # speech-to-text for voice recording
 OPENAI_API_KEY=...       # LLM for summaries, extraction, Companion replies
+OPENAI_BASE_URL=         # optional: any OpenAI-compatible gateway, e.g.
+                         # https://openrouter.ai/api/v1 (models: openai/gpt-5.4-mini)
 OPENAI_MODEL=gpt-5.4-mini
 ANTHROPIC_API_KEY=...    # alternative LLM provider (OpenAI wins if both set)
 JWT_SECRET=change-me

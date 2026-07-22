@@ -13,8 +13,11 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
-    # preferred OpenAI model; llm.py falls back through OPENAI_CANDIDATES if
-    # this one isn't available to the account
+    # base_url lets any OpenAI-compatible gateway serve the same code —
+    # e.g. https://openrouter.ai/api/v1 (models then look like openai/gpt-5.4-mini)
+    openai_base_url: str | None = None
+    # preferred model; llm.py falls back through OPENAI_CANDIDATES if this one
+    # isn't available to the account
     openai_model: str = "gpt-5.4-mini"
     deepgram_api_key: str | None = None
     jwt_secret: str = "change-me"

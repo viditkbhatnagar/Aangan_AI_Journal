@@ -17,7 +17,16 @@ _openai_client = None
 _openai_model: str | None = None  # resolved working model, cached
 _openai_disabled = False  # set on auth failure so we don't retry every call
 
-OPENAI_CANDIDATES = ["gpt-5-mini", "gpt-5-nano", "gpt-5.1-mini", "gpt-4o-mini"]
+OPENAI_CANDIDATES = [
+    # OpenRouter-style ids first (used when OPENAI_BASE_URL points there),
+    # then direct-OpenAI ids
+    "openai/gpt-5.4-nano",
+    "openai/gpt-5-mini",
+    "openai/gpt-4o-mini",
+    "gpt-5-mini",
+    "gpt-5-nano",
+    "gpt-4o-mini",
+]
 
 
 def _get_openai():
@@ -25,7 +34,10 @@ def _get_openai():
     if _openai_client is None and settings.openai_api_key and not _openai_disabled:
         from openai import OpenAI
 
-        _openai_client = OpenAI(api_key=settings.openai_api_key)
+        _openai_client = OpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url or None,
+        )
     return None if _openai_disabled else _openai_client
 
 
@@ -57,13 +69,17 @@ def _openai_complete(prompt: str, system: str, max_tokens: int) -> str | None:
         if not model:
             continue
         try:
-            response = client.responses.create(
+            # chat.completions works on both api.openai.com and OpenAI-compatible
+            # gateways (OpenRouter). No token cap: max_tokens vs
+            # max_completion_tokens differs between them, and replies are short.
+            response = client.chat.completions.create(
                 model=model,
-                instructions=system,
-                input=prompt,
-                max_output_tokens=max(max_tokens, 512),  # reasoning models need headroom
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt},
+                ],
             )
-            text = (response.output_text or "").strip()
+            text = (response.choices[0].message.content or "").strip()
             if text:
                 _openai_model = model
                 return text
