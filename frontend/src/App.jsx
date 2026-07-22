@@ -7,12 +7,14 @@ import Home from './screens/Home';
 import Journal from './screens/Journal';
 import Ask from './screens/Ask';
 import Alerts from './screens/Alerts';
+import Actions from './screens/Actions';
 
 const NAV = [
   { to: '/', icon: '🏡', label: 'Home' },
   { to: '/journal', icon: '📓', label: 'Journal' },
   { to: '/ask', icon: '💬', label: 'Ask' },
   { to: '/alerts', icon: '🔔', label: 'Alerts' },
+  { to: '/actions', icon: '🎁', label: 'Actions' },
 ];
 
 export default function App() {
@@ -47,6 +49,7 @@ export default function App() {
         <Route path="/journal" element={<Journal />} />
         <Route path="/ask" element={<Ask />} />
         <Route path="/alerts" element={<Alerts />} />
+        <Route path="/actions" element={<Actions />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <nav className="bottom-nav" aria-label="Main navigation">

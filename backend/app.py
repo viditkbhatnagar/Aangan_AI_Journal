@@ -5,7 +5,15 @@ from fastapi import FastAPI
 
 from config import settings
 from db import Base, engine
-from routes import alert_routes, ask_routes, auth_routes, circle_routes, entry_routes, rule_routes
+from routes import (
+    action_routes,
+    alert_routes,
+    ask_routes,
+    auth_routes,
+    circle_routes,
+    entry_routes,
+    rule_routes,
+)
 
 app = FastAPI(title="Aangan", version="1.0")
 
@@ -23,6 +31,7 @@ app.include_router(entry_routes.router)
 app.include_router(rule_routes.router)
 app.include_router(ask_routes.router)
 app.include_router(alert_routes.router)
+app.include_router(action_routes.router)
 
 
 @app.get("/health")
