@@ -8,6 +8,8 @@ import Journal from './screens/Journal';
 import Ask from './screens/Ask';
 import Alerts from './screens/Alerts';
 import Actions from './screens/Actions';
+import MemoryBook from './screens/MemoryBook';
+import Me from './screens/Me';
 
 const NAV = [
   { to: '/', icon: '🏡', label: 'Home' },
@@ -15,6 +17,8 @@ const NAV = [
   { to: '/ask', icon: '💬', label: 'Ask' },
   { to: '/alerts', icon: '🔔', label: 'Alerts' },
   { to: '/actions', icon: '🎁', label: 'Actions' },
+  { to: '/memory', icon: '📖', label: 'Memory' },
+  { to: '/me', icon: '🪞', label: 'Me' },
 ];
 
 export default function App() {
@@ -50,6 +54,8 @@ export default function App() {
         <Route path="/ask" element={<Ask />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/actions" element={<Actions />} />
+        <Route path="/memory" element={<MemoryBook />} />
+        <Route path="/me" element={<Me />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <nav className="bottom-nav" aria-label="Main navigation">

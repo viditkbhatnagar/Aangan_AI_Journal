@@ -36,3 +36,20 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.post("/me/settings", response_model=UserOut)
+def update_settings(
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    language = body.get("language")
+    if language in {"en", "hi"}:
+        user.language = language
+    name = (body.get("name") or "").strip()
+    if name:
+        user.name = name
+    db.add(user)
+    db.commit()
+    return user
