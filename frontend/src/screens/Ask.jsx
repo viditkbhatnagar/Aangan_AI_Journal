@@ -19,7 +19,7 @@ export default function Ask() {
         ? await api.postForm('/ask', payload)
         : await api.post('/ask', payload);
       setThread((t) => [{ question: label, ...result }, ...t]);
-      speak(result.answer, result.language);
+      speak(result.answer, result.language, { warm: true });
       setQuestion('');
     } catch (err) {
       setError(err.message);
@@ -68,7 +68,7 @@ export default function Ask() {
           <p className="muted">You asked: {turn.question}</p>
           <div className="row between" style={{ alignItems: 'flex-start' }}>
             <p style={{ fontSize: '1.05rem' }}>{turn.answer}</p>
-            <button className="quiet" onClick={() => speak(turn.answer, turn.language)} aria-label="Read aloud">
+            <button className="quiet" onClick={() => speak(turn.answer, turn.language, { warm: true })} aria-label="Read aloud">
               🔊
             </button>
           </div>
