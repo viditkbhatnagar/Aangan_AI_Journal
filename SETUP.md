@@ -42,6 +42,8 @@ of voice, template answers instead of LLM prose):
 | `OPENAI_BASE_URL` | use any OpenAI-compatible gateway | e.g. `https://openrouter.ai/api/v1` |
 | `OPENAI_MODEL` | model choice | `gpt-5.4-mini` (direct) / `openai/gpt-5.4-mini` (OpenRouter) |
 | `ANTHROPIC_API_KEY` | alternative LLM provider | console.anthropic.com |
+| `DOER_PURCHASE_SITE` | shop the action agent prepares carts on | default demo store; set `https://www.amazon.in` for real cart prep |
+| `DOER_HEADLESS` | `false` opens a visible browser that stays open at the cart for you | default `true` |
 
 `.env` is gitignored. Never commit keys.
 
@@ -92,7 +94,12 @@ A five-minute tour that exercises everything:
    "nothing shared" answer. Nothing private ever crosses members.
 4. **Journal** — hold-to-talk (or type), watch facts get extracted private-by-
    default with share prompts; share one fact while its entry stays private.
-5. **Me** — your private Mirror, your sharing rules, your alert triggers.
+   Say something like *"order chocolates for my husband — you do it"* and the
+   Doer drafts an action you can approve on the spot (with `DOER_HEADLESS=false`
+   a browser opens, adds to cart, and stays open for you to pay).
+5. **⚙️ Agents** (top right) — a live side panel showing which agent is working
+   on your requests and what each one did.
+6. **Me** — your private Mirror, your sharing rules, your alert triggers.
 6. Log in as `mumma@ghar.family` and ask in Hindi — दीपा को जन्मदिन पर क्या पसंद आएगा?
 
 ## 5. Tests and build

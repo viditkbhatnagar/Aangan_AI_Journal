@@ -64,8 +64,10 @@ stay deterministic even when `.env` has keys.
     `prompter.py`/`relationship_radar.py` (nudges), `keepsake.py`/`mirror.py`
   - `llm.py` — provider chain: OpenAI/OpenRouter → Anthropic → deterministic
     fallback. Every LLM call must pass a `fallback=` callable.
-- `backend/services/capture.py` — the entry pipeline; `services/actions.py` —
-  action lifecycle with the approval gate
+- `backend/services/capture.py` — the entry pipeline (also detects "you do it"
+  delegations and drafts an action awaiting approval); `services/actions.py` —
+  action lifecycle with the approval gate; `services/activity.py` — per-user
+  agent-activity feed shown in the UI's right-hand "Agents" panel
 - `frontend/src/screens/` — one file per screen; `src/api.js` keeps the JWT in
   memory only (never localStorage)
 

@@ -4,9 +4,10 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from agents import consent_guardian, extractor, librarian, summarizer, transcriber
+from agents import consent_guardian, doer, extractor, librarian, summarizer, transcriber
 from agents.consent_guardian import ShareSuggestion
-from models import Fact, JournalEntry, User
+from models import Action, Fact, JournalEntry, User
+from services import activity
 
 
 @dataclass
@@ -15,6 +16,7 @@ class CaptureResult:
     facts: list[Fact] = field(default_factory=list)
     share_suggestions: list[ShareSuggestion] = field(default_factory=list)
     applied_rules: list[str] = field(default_factory=list)
+    suggested_action: Action | None = None
 
 
 def run_capture(
@@ -28,10 +30,15 @@ def run_capture(
 ) -> CaptureResult:
     duration = 0
     if transcript is None:
+        activity.emit(author.id, "Transcriber", "Listening to your recording…")
         transcription = transcriber.transcribe(audio_path)  # may raise TranscriptionUnavailable
         transcript = transcription.text
         language = language or transcription.language
         duration = transcription.duration_sec
+        activity.emit(
+            author.id, "Transcriber",
+            f"Heard {duration}s of {language or 'en'} — transcript ready.",
+        )
     language = language or author.language or "en"
 
     # 1-2) entry row, private by default
@@ -47,10 +54,12 @@ def run_capture(
     db.flush()
 
     # 3-4) summary and shareable snippets
+    activity.emit(author.id, "Summarizer", "Writing a gentle summary…")
     summary = summarizer.summarize(transcript, language)
     entry.summary = summary.summary
 
     # 5) facts, private by default
+    activity.emit(author.id, "Extractor", "Noting the little things…")
     facts = []
     for draft in extractor.extract_facts(transcript, summary.summary):
         fact = Fact(
@@ -65,22 +74,38 @@ def run_capture(
         db.add(fact)
         facts.append(fact)
     db.commit()
+    activity.emit(
+        author.id, "Extractor",
+        f"Kept {len(facts)} note(s) — all private to you.",
+    )
 
     # 6) the author's own standing rules, then suggestions to confirm in-app
     applied_rules = consent_guardian.apply_rules(db, author, facts)
+    for rule in applied_rules:
+        activity.emit(author.id, "Consent Guardian", f"Applied your rule: “{rule}”.")
     suggestions = consent_guardian.suggest_shares(entry, facts)
+    if suggestions:
+        activity.emit(
+            author.id, "Consent Guardian",
+            f"{len(suggestions)} share suggestion(s) — your call, always.",
+        )
 
     # 7) index into the vector store with visibility metadata
     librarian.upsert_entry(db, entry, facts)
+    activity.emit(author.id, "Librarian", "Tucked into the family memory, visibility-tagged.")
 
-    # 8) the author's alert triggers (wired in the alerts milestone)
+    # 8) the author's alert triggers
     _run_alerter(db, entry, facts)
+
+    # 9) does this entry ask for something to be DONE? draft it for approval
+    suggested_action = _suggest_action(db, author, transcript)
 
     return CaptureResult(
         entry=entry,
         facts=facts,
         share_suggestions=suggestions,
         applied_rules=applied_rules,
+        suggested_action=suggested_action,
     )
 
 
@@ -89,4 +114,28 @@ def _run_alerter(db: Session, entry: JournalEntry, facts: list[Fact]) -> None:
         from agents import alerter
     except ImportError:
         return
-    alerter.evaluate(db, entry, facts)
+    created = alerter.evaluate(db, entry, facts)
+    if created:
+        from models import User as UserModel
+
+        names = ", ".join(
+            db.get(UserModel, a.recipient_id).name for a in created
+        )
+        activity.emit(
+            entry.author_id, "Alerter",
+            f"Your trigger matched — gently told {names}.",
+        )
+
+
+def _suggest_action(db: Session, author: User, transcript: str) -> Action | None:
+    intent = doer.detect_action_intent(transcript)
+    if not intent:
+        return None
+    from services import actions as actions_service
+
+    action = actions_service.create_action(db, author, intent)
+    activity.emit(
+        author.id, "Doer",
+        f"Prepared “{intent[:60]}” — waiting for YOUR approval on the Actions page.",
+    )
+    return action

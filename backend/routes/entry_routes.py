@@ -10,7 +10,7 @@ from auth import get_current_user, require_circle_id
 from config import settings
 from db import get_db
 from models import JournalEntry, User, Visibility
-from schemas import CaptureOut, EntryOut, ShareIn, ShareSuggestionOut
+from schemas import ActionOut, CaptureOut, EntryOut, ShareIn, ShareSuggestionOut
 from services import capture
 
 router = APIRouter(tags=["entries"])
@@ -56,6 +56,11 @@ async def create_entry(
             for s in result.share_suggestions
         ],
         applied_rules=result.applied_rules,
+        suggested_action=(
+            ActionOut.model_validate(result.suggested_action)
+            if result.suggested_action
+            else None
+        ),
     )
 
 

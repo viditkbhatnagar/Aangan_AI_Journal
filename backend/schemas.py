@@ -94,6 +94,7 @@ class CaptureOut(BaseModel):
     entry: EntryOut
     share_suggestions: list[ShareSuggestionOut] = []
     applied_rules: list[str] = []
+    suggested_action: "ActionOut | None" = None
 
 
 class ShareIn(BaseModel):
@@ -190,3 +191,6 @@ class ActionOut(ORMModel):
     result: dict | None
     created_at: datetime
     completed_at: datetime | None
+
+
+CaptureOut.model_rebuild()

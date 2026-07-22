@@ -199,6 +199,40 @@ label { display: block; font-size: 0.85rem; color: var(--color-text-soft); margi
   50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(179, 64, 46, 0), var(--shadow-lift); }
 }
 
+/* agent activity side panel */
+.agent-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(21rem, 88vw);
+  background: var(--color-surface-raised);
+  border-left: 1px solid var(--color-line);
+  box-shadow: -12px 0 40px -18px rgba(34, 64, 60, 0.35);
+  padding: var(--space-3);
+  overflow-y: auto;
+  z-index: 40;
+  animation: slide-in var(--duration-normal) var(--ease-out-expo);
+}
+@keyframes slide-in {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.agent-feed { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+.agent-event {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.65rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  animation: rise var(--duration-normal) var(--ease-out-expo) backwards;
+}
+.agent-event-icon { font-size: 1.05rem; line-height: 1.4; }
+@media (min-width: 1280px) {
+  /* dock beside the app instead of overlaying it */
+  .agent-panel { box-shadow: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

@@ -7,6 +7,7 @@ from config import settings
 from db import Base, engine
 from routes import (
     action_routes,
+    activity_routes,
     alert_routes,
     ask_routes,
     auth_routes,
@@ -36,6 +37,7 @@ app.include_router(alert_routes.router)
 app.include_router(action_routes.router)
 app.include_router(nudge_routes.router)
 app.include_router(keepsake_routes.router)
+app.include_router(activity_routes.router)
 
 
 @app.get("/health")

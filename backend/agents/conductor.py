@@ -30,7 +30,18 @@ def relationship_labels(db: Session, user: User) -> dict[int, str]:
     return {r.to_user_id: r.label for r in rows}
 
 def handle_ask(db: Session, user: User, question: str) -> AskResult:
+    from services import activity
+
+    activity.emit(user.id, "Conductor", "Routing your question through the agents…")
     snippets = librarian.search(db, user, question)
+    activity.emit(
+        user.id, "Librarian",
+        f"Found {len(snippets)} snippet(s) you're allowed to see — private ones stayed sealed.",
+    )
     relationships = relationship_labels(db, user)
     answer = companion.compose_answer(user, question, snippets, relationships)
+    from agents import llm
+
+    voice = llm._openai_model or ("claude" if llm.llm_available() else "local warmth")
+    activity.emit(user.id, "Companion", f"Answered with love (voice: {voice}).")
     return AskResult(answer=answer, language=user.language or "en", snippets=snippets)

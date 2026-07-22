@@ -30,7 +30,13 @@ def create_action(
     action = Action(created_by=user.id, intent=intent.strip(), related_alert_id=related_alert_id)
     db.add(action)
     db.flush()
-    doer.prepare(db, action, plan_hint)  # -> awaiting_approval
+    plan = doer.prepare(db, action, plan_hint)  # -> awaiting_approval
+    from services import activity
+
+    activity.emit(
+        user.id, "Doer",
+        f"Drafted a {plan.get('type', 'plan')} — nothing happens until you approve.",
+    )
     return action
 
 
@@ -42,7 +48,12 @@ def approve_and_complete(db: Session, user: User, action_id: int) -> Action:
         raise WrongState(f"This action is {action.status}, not awaiting approval.")
     action.status = "approved"
     db.commit()
-    doer.complete_action(db, action, user)  # -> completed, stops at safe handoff
+    from services import activity
+
+    activity.emit(user.id, "Doer", "Approved — working up to the safe handoff (never paying, never sending)…")
+    result = doer.complete_action(db, action, user)  # -> completed, stops at safe handoff
+    note = result.get("note", "")
+    activity.emit(user.id, "Doer", f"Done: {note[:110]}" if note else "Done — over to you.")
     return action
 
 

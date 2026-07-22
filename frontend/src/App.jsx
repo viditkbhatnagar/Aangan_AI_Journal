@@ -10,6 +10,7 @@ import Alerts from './screens/Alerts';
 import Actions from './screens/Actions';
 import MemoryBook from './screens/MemoryBook';
 import Me from './screens/Me';
+import AgentPanel from './components/AgentPanel';
 
 const NAV = [
   { to: '/', icon: '🏡', label: 'Home' },
@@ -25,6 +26,7 @@ export default function App() {
   const { user } = useAuth();
   const location = useLocation();
   const [alertCount, setAlertCount] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return undefined;
@@ -46,8 +48,19 @@ export default function App() {
     <div className="app-shell">
       <header className="row between" style={{ marginBottom: 'var(--space-3)' }}>
         <span className="brand">Aangan<span className="hindi">आँगन</span></span>
-        <span className="muted">{user.name}</span>
+        <span className="row" style={{ width: 'auto' }}>
+          <button
+            className="quiet"
+            onClick={() => setPanelOpen(!panelOpen)}
+            aria-pressed={panelOpen}
+            title="See which agents are working"
+          >
+            ⚙️ Agents
+          </button>
+          <span className="muted">{user.name}</span>
+        </span>
       </header>
+      <AgentPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/journal" element={<Journal />} />
