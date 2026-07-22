@@ -1,18 +1,38 @@
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { api } from './api';
 import { useAuth } from './auth';
 import Welcome from './screens/Welcome';
 import Home from './screens/Home';
 import Journal from './screens/Journal';
 import Ask from './screens/Ask';
+import Alerts from './screens/Alerts';
 
 const NAV = [
   { to: '/', icon: '🏡', label: 'Home' },
   { to: '/journal', icon: '📓', label: 'Journal' },
   { to: '/ask', icon: '💬', label: 'Ask' },
+  { to: '/alerts', icon: '🔔', label: 'Alerts' },
 ];
 
 export default function App() {
   const { user } = useAuth();
+  const location = useLocation();
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    let alive = true;
+    async function poll() {
+      try {
+        const alerts = await api.get('/alerts');
+        if (alive) setAlertCount(alerts.filter((a) => a.status === 'new').length);
+      } catch { /* quiet */ }
+    }
+    poll();
+    const timer = setInterval(poll, 30000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [user, location.pathname]);
 
   if (!user) return <Welcome />;
 
@@ -26,6 +46,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/ask" element={<Ask />} />
+        <Route path="/alerts" element={<Alerts />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <nav className="bottom-nav" aria-label="Main navigation">
@@ -33,6 +54,7 @@ export default function App() {
           <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon" aria-hidden="true">{icon}</span>
             {label}
+            {to === '/alerts' && alertCount > 0 && <span className="badge">{alertCount}</span>}
           </NavLink>
         ))}
       </nav>
