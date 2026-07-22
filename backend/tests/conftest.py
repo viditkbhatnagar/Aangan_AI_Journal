@@ -62,6 +62,28 @@ def vector_store():
     embeddings.set_embedder(None)
 
 
+@pytest.fixture()
+def client(db):
+    from fastapi.testclient import TestClient
+
+    import db as db_mod
+    from app import app
+
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[db_mod.get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+def auth_headers(user):
+    from auth import create_token
+
+    return {"Authorization": f"Bearer {create_token(user)}"}
+
+
 class Family:
     def __init__(self, circle, aditya, deepa, mumma, abhishek):
         self.circle = circle

@@ -23,9 +23,9 @@ class Settings(BaseSettings):
     actions_dir: str = str(BACKEND_DIR / "data" / "actions")
 
     # Model tiers for the reasoning agents. Fast tier does summarize/extract/word
-    # alerts; chat tier is the Companion's voice.
-    model_fast: str = "claude-haiku-4-5"
-    model_chat: str = "claude-sonnet-5"
+    # alerts; chat tier is the Companion's voice. Both env-overridable.
+    model_fast: str = "claude-opus-4-8"
+    model_chat: str = "claude-opus-4-8"
 
     # Doer defaults: a public demo store where the cart works without login, so
     # the no-credentials rule is never even tempted.
