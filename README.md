@@ -121,7 +121,7 @@ backend/
 frontend/               # React + Vite; JWT held in memory only (no localStorage)
 ```
 
-Run the test suite (76 tests, including leak-proofing of the visibility spine):
+Run the test suite (81 tests, including leak-proofing of the visibility spine):
 
 ```bash
 cd backend && .venv/bin/python -m pytest tests/ -q
