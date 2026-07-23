@@ -129,9 +129,12 @@ cd backend && .venv/bin/python -m pytest tests/ -q
 
 ## Privacy posture
 
-- Family data stays on your machine (SQLite + local Chroma + local embeddings).
-  The only outbound calls are transcription (Deepgram) and reasoning (Anthropic)
-  — and only when you configure those keys.
+- Family data is stored on the server you run (SQLite + local Chroma + local
+  embeddings). When the corresponding keys are configured, two things leave
+  that server: audio goes to **Deepgram** for transcription, and entry text /
+  questions (with only the snippets the asker may see) go to the configured
+  LLM provider (**OpenAI/OpenRouter or Anthropic**). With no keys configured,
+  nothing leaves the machine. See `backend/legal/privacy.md`.
 - Another member's private content is never placed into any prompt.
 - The Mirror is visible only to its owner; the memory book contains only shared
   moments.

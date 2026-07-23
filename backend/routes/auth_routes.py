@@ -11,6 +11,15 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/auth/register", response_model=TokenOut)
 def register(body: RegisterIn, db: Session = Depends(get_db)):
+    from datetime import datetime
+
+    from routes.legal_routes import POLICY_VERSION
+
+    if not body.accept_terms:
+        raise HTTPException(
+            status_code=422,
+            detail="Please read and accept the privacy policy and terms first.",
+        )
     email = body.email.strip().lower()
     if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=409, detail="That email is already registered.")
@@ -19,6 +28,8 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
         email=email,
         password_hash=hash_password(body.password),
         language=body.language,
+        accepted_policy_version=POLICY_VERSION,
+        accepted_at=datetime.utcnow(),
     )
     db.add(user)
     db.commit()

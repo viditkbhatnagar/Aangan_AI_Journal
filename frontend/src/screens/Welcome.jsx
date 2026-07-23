@@ -5,7 +5,7 @@ import { useAuth } from '../auth';
 export default function Welcome() {
   const { login, register, refreshMembers } = useAuth();
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', language: 'en' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', language: 'en', accept_terms: false });
   const [circleChoice, setCircleChoice] = useState('join'); // after register: join | create
   const [circleValue, setCircleValue] = useState('');
   const [error, setError] = useState(null);
@@ -69,6 +69,21 @@ export default function Welcome() {
                 <option value="hi">हिन्दी (Hindi)</option>
               </select>
             </div>
+            <label className="row" style={{ gap: '0.5rem', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+              <input
+                type="checkbox"
+                style={{ width: 'auto', marginTop: '0.2rem' }}
+                checked={form.accept_terms}
+                onChange={(e) => setForm({ ...form, accept_terms: e.target.checked })}
+                required
+              />
+              <span>
+                I'm 18+ and accept the{' '}
+                <a href="/api/legal/privacy" target="_blank" rel="noreferrer">privacy policy</a> and{' '}
+                <a href="/api/legal/terms" target="_blank" rel="noreferrer">terms</a>.
+                Voice is transcribed by Deepgram; summaries and replies use our AI provider.
+              </span>
+            </label>
             <div>
               <label>Family circle</label>
               <div className="row">

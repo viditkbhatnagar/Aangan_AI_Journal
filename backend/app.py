@@ -14,6 +14,7 @@ from routes import (
     circle_routes,
     entry_routes,
     keepsake_routes,
+    legal_routes,
     nudge_routes,
     rule_routes,
 )
@@ -38,6 +39,7 @@ app.include_router(action_routes.router)
 app.include_router(nudge_routes.router)
 app.include_router(keepsake_routes.router)
 app.include_router(activity_routes.router)
+app.include_router(legal_routes.router)
 
 
 @app.get("/health")

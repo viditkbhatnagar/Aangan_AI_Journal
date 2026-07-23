@@ -190,6 +190,10 @@ export default function Journal() {
       </section>
 
       <HoldToTalk onRecorded={onRecorded} disabled={busy} />
+      <p className="muted" style={{ textAlign: 'center', fontSize: '0.75rem' }}>
+        Voice is transcribed by Deepgram · summaries use our AI provider ·{' '}
+        <a href="/api/legal/privacy" target="_blank" rel="noreferrer">privacy</a>
+      </p>
       {busy && <p className="muted" style={{ textAlign: 'center' }}>Listening back and making notes…</p>}
       {notice && <p className="muted" role="status">{notice}</p>}
 

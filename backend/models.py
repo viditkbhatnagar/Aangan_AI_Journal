@@ -32,6 +32,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     language: Mapped[str] = mapped_column(String, default="en", nullable=False)
     voice_sample_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    accepted_policy_version: Mapped[str | None] = mapped_column(String, nullable=True)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     memberships: Mapped[list["Membership"]] = relationship(back_populates="user")
