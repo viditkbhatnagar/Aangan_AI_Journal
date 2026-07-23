@@ -8,6 +8,7 @@ Mumma's knee trigger, and entries that make the app demo on first login —
 all without needing any API keys.
 """
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from auth import hash_password
 from config import settings
@@ -54,6 +55,7 @@ def reset_stores():
     print("Resetting aangan.db and the vector store for a clean demo…")
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    _stamp_current_revision()
     try:
         collection = store.get_collection()
         existing = collection.get()
@@ -61,6 +63,17 @@ def reset_stores():
             collection.delete(ids=existing["ids"])
     except Exception:
         pass
+
+
+def _stamp_current_revision():
+    """A freshly seeded DB is already at head — record that for Alembic."""
+    from alembic import command
+    from alembic.config import Config
+
+    backend_dir = Path(__file__).resolve().parent
+    cfg = Config(str(backend_dir / "alembic.ini"))
+    cfg.set_main_option("script_location", str(backend_dir / "alembic"))
+    command.stamp(cfg, "head", purge=True)
 
 
 def backdate(db, entry, facts, when: datetime):

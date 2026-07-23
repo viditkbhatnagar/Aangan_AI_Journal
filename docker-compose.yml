@@ -17,10 +17,12 @@ services:
       - aangan-chroma:/app/backend/chroma_data
       - aangan-media:/app/backend/data
       - aangan-models:/root/.cache/huggingface
-    # keep the SQLite file on the volume
+    # keep the SQLite file on the volume; migrate.py handles fresh, pre-alembic,
+    # and alembic-managed volumes alike before the server starts
     command: >
       sh -c "mkdir -p dbdata &&
-             DATABASE_URL=sqlite:////app/backend/dbdata/aangan.db
+             export DATABASE_URL=sqlite:////app/backend/dbdata/aangan.db &&
+             python scripts/migrate.py &&
              uvicorn app:app --host 0.0.0.0 --port 8000"
 
 volumes:
