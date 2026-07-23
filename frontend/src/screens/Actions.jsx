@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../auth';
+import { t } from '../i18n';
 
 function PlanDetails({ plan }) {
   if (!plan) return null;
@@ -37,6 +39,8 @@ function ResultDetails({ result }) {
 }
 
 export default function Actions() {
+  const { user } = useAuth();
+  const lang = user.language;
   const location = useLocation();
   const [actions, setActions] = useState([]);
   const [intent, setIntent] = useState('');
@@ -85,9 +89,9 @@ export default function Actions() {
   return (
     <div className="stack-lg">
       <section>
-        <h1>Actions</h1>
+        <h1>{t(lang, 'actions.title')}</h1>
         <p className="muted">
-          I prepare — you approve and finish. I never pay or send anything myself.
+          {t(lang, 'actions.subtitle')}
         </p>
       </section>
 
@@ -96,10 +100,10 @@ export default function Actions() {
           className="grow"
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
-          placeholder="e.g. order Deepa's chocolates"
+          placeholder={t(lang, 'actions.placeholder')}
           aria-label="What should I prepare?"
         />
-        <button disabled={busy || !intent.trim()}>Prepare</button>
+        <button disabled={busy || !intent.trim()}>{t(lang, 'actions.prepare')}</button>
       </form>
       {error && <p className="error-text" role="alert">{error}</p>}
 
@@ -119,7 +123,7 @@ export default function Actions() {
           <PlanDetails plan={action.plan} />
           <div className="row">
             <button disabled={busy} onClick={() => act(action.id, 'approve')}>
-              {busy ? 'Preparing…' : 'Approve — prepare it'}
+              {busy ? '…' : t(lang, 'actions.approve')}
             </button>
             <button className="quiet" disabled={busy} onClick={() => act(action.id, 'cancel')}>
               Cancel

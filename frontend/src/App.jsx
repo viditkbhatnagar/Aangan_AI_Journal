@@ -9,18 +9,19 @@ import Journal from './screens/Journal';
 import Ask from './screens/Ask';
 import Alerts from './screens/Alerts';
 import Actions from './screens/Actions';
+import { t } from './i18n';
 import MemoryBook from './screens/MemoryBook';
 import Me from './screens/Me';
 import AgentPanel from './components/AgentPanel';
 
 const NAV = [
-  { to: '/', icon: '🏡', label: 'Home' },
-  { to: '/journal', icon: '📓', label: 'Journal' },
-  { to: '/ask', icon: '💬', label: 'Ask' },
-  { to: '/alerts', icon: '🔔', label: 'Alerts' },
-  { to: '/actions', icon: '🎁', label: 'Actions' },
-  { to: '/memory', icon: '📖', label: 'Memory' },
-  { to: '/me', icon: '🪞', label: 'Me' },
+  { to: '/', icon: '🏡', key: 'nav.home' },
+  { to: '/journal', icon: '📓', key: 'nav.journal' },
+  { to: '/ask', icon: '💬', key: 'nav.ask' },
+  { to: '/alerts', icon: '🔔', key: 'nav.alerts' },
+  { to: '/actions', icon: '🎁', key: 'nav.actions' },
+  { to: '/memory', icon: '📖', key: 'nav.memory' },
+  { to: '/me', icon: '🪞', key: 'nav.me' },
 ];
 
 export default function App() {
@@ -75,10 +76,10 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <nav className="bottom-nav" aria-label="Main navigation">
-        {NAV.map(({ to, icon, label }) => (
+        {NAV.map(({ to, icon, key }) => (
           <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon" aria-hidden="true">{icon}</span>
-            {label}
+            {t(user.language, key)}
             {to === '/alerts' && alertCount > 0 && <span className="badge">{alertCount}</span>}
           </NavLink>
         ))}

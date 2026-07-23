@@ -16,6 +16,7 @@ class RegisterIn(BaseModel):
     password: str = Field(min_length=8)
     language: str = "en"
     accept_terms: bool = False
+    source: str | None = None  # acquisition attribution, e.g. "?ref=" value
 
 
 class LoginIn(BaseModel):

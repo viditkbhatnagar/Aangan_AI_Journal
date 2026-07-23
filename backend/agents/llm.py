@@ -7,12 +7,15 @@
    keeps working with no keys at all.
 """
 import json
+import logging
 import re
 import time
 from collections.abc import Callable
 
 from config import settings
 from services import metering
+
+_logger = logging.getLogger("aangan.llm")
 
 _anthropic_client = None
 _openai_client = None
@@ -97,10 +100,12 @@ def _openai_complete(prompt: str, system: str, max_tokens: int, agent: str) -> s
             return None
         except AuthenticationError:
             _openai_disabled = True  # bad key: stop trying on every call
+            _logger.warning("openai auth failed — provider disabled for this process")
             return None
         except (NotFoundError, BadRequestError):
             continue  # model not available to this account — try the next
-        except Exception:
+        except Exception as exc:
+            _logger.warning("openai call failed (%s): %s", model, exc)
             return None
     return None
 

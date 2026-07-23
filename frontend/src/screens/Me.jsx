@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
+import { t } from '../i18n';
 import { useAuth } from '../auth';
 
 function MoodStrip({ series }) {
@@ -153,9 +154,9 @@ export default function Me() {
       <section className="row between">
         <div>
           <h1>{user.name}</h1>
-          <p className="muted">Your private mirror, your rules. Only you see this page.</p>
+          <p className="muted">{t(user.language, 'me.subtitle')}</p>
         </div>
-        <button className="ghost" onClick={logout}>Log out</button>
+        <button className="ghost" onClick={logout}>{t(user.language, 'me.logout')}</button>
       </section>
 
       {error && <p className="error-text">{error}</p>}

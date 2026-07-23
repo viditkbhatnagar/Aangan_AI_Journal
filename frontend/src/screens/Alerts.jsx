@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../auth';
+import { t } from '../i18n';
 
 export default function Alerts() {
+  const { user } = useAuth();
+  const lang = user.language;
   const [alerts, setAlerts] = useState([]);
   const navigate = useNavigate();
 
@@ -25,14 +29,14 @@ export default function Alerts() {
   return (
     <div className="stack-lg">
       <section>
-        <h1>Alerts</h1>
-        <p className="muted">Gentle nudges from the people who asked you to be told.</p>
+        <h1>{t(lang, 'alerts.title')}</h1>
+        <p className="muted">{t(lang, 'alerts.subtitle')}</p>
       </section>
 
       {fresh.length === 0 && (
         <div className="empty-state">
           <span className="big" aria-hidden="true">🌿</span>
-          All quiet in the courtyard — no one needs anything right now.
+          {t(lang, 'alerts.empty')}
         </div>
       )}
 
@@ -45,11 +49,11 @@ export default function Alerts() {
           <p style={{ fontSize: '1.05rem' }}>{alert.message}</p>
           {alert.suggested_action && <p className="muted">💡 {alert.suggested_action}</p>}
           <div className="row">
-            <button onClick={() => actOn(alert)}>Act on this</button>
+            <button onClick={() => actOn(alert)}>{t(lang, 'alerts.act')}</button>
             {alert.status === 'new' && (
-              <button className="ghost" onClick={() => setStatus(alert, 'seen')}>Mark seen</button>
+              <button className="ghost" onClick={() => setStatus(alert, 'seen')}>{t(lang, 'alerts.seen')}</button>
             )}
-            <button className="quiet" onClick={() => setStatus(alert, 'dismissed')}>Dismiss</button>
+            <button className="quiet" onClick={() => setStatus(alert, 'dismissed')}>{t(lang, 'alerts.dismiss')}</button>
             <button
               className="quiet"
               title="This looks wrong — tell a human"

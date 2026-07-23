@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { t } from '../i18n';
 
 export default function Home() {
   const { user, members } = useAuth();
@@ -26,16 +27,16 @@ export default function Home() {
   return (
     <div className="stack-lg">
       <section>
-        <h1>Namaste, {user.name}</h1>
-        <p className="muted">This courtyard is yours. Speak whenever you like — everything stays private unless you share it.</p>
+        <h1>{t(user.language, 'home.greeting')}, {user.name}</h1>
+        <p className="muted">{t(user.language, 'home.subtitle')}</p>
       </section>
 
       <Link to="/journal" style={{ textDecoration: 'none', display: 'block' }}>
         <div className="talk-frame">
           <span className="talk-button" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            Talk to me
+            {t(user.language, 'home.talk')}
           </span>
-          <p className="muted" style={{ marginTop: 'var(--space-2)' }}>Ten seconds or ten minutes — it's all yours.</p>
+          <p className="muted" style={{ marginTop: 'var(--space-2)' }}>{t(user.language, 'home.talk.hint')}</p>
         </div>
       </Link>
 
@@ -53,7 +54,7 @@ export default function Home() {
 
       <section className="card">
         <div className="row between">
-          <h2>Your circle{circle ? ` — ${circle.name}` : ''}</h2>
+          <h2>{t(user.language, 'home.circle')}{circle ? ` — ${circle.name}` : ''}</h2>
           {circle && (
             <button className="quiet" onClick={copyInvite} title="Copy the invite code for family to join">
               {copied ? 'Copied ✓' : `Invite: ${circle.invite_code} ⧉`}
@@ -62,7 +63,7 @@ export default function Home() {
         </div>
         {others.length === 0 ? (
           <p className="muted" style={{ marginTop: 'var(--space-2)' }}>
-            No one else here yet — copy the invite code above and send it to family.
+            {t(user.language, 'home.circle.empty')}
           </p>
         ) : (
           <ul style={{ listStyle: 'none', marginTop: 'var(--space-2)' }} className="stack">

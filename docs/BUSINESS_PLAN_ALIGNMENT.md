@@ -162,6 +162,25 @@ metrics/finance, ops/scalability) of the repo against the rubric.
 
 ---
 
+### B3 — Status after the alignment execution (2026-07-23)
+
+All P0 and P1 gaps above are **closed in code** (see commits `1c377cf`…): entry
+deletion cascade (#1), legal/consent surfaces + corrected disclosure (#2),
+invite loop (#3), Doer labeled honestly (#4), Docker deploy story (#5),
+security floor + rate limiting (#6), usage metering + `scripts/metrics.py`
+(#7, #9), entitlements + caps + fake-door (#8), support/corrections (#11),
+leave/remove-member + reset links (#12), backups/logging/CI (#13), Hindi UI
+strings (#14), 5-minute recording cap (#15). From P2: audit trail, code-level
+never-medical enforcement, export + account erasure, ops/IR runbook
+(docs/OPERATIONS.md), 18+ policy. From P3: referral `?ref=` attribution.
+
+**Still open (deliberate):** live payment gateway (needs merchant account —
+fake-door measures demand meanwhile), cloud deployment (needs an account —
+one `docker compose up` away), MFA, async capture pipeline, Alembic,
+multi-circle UI, multilingual embedding swap, official commerce APIs, and the
+session-persistence trade (memory-only JWT kept as a privacy posture — to be
+validated in D2 user testing).
+
 ## Part C — Engineering roadmap (four waves)
 
 **Wave 1 — Truth & trust (P0, ~1 week).** Entry deletion cascade + UI + spine

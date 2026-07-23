@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api';
+import { t } from '../i18n';
 import { useAuth } from '../auth';
 import HoldToTalk from '../components/HoldToTalk';
 import UpgradeCard from '../components/UpgradeCard';
@@ -67,9 +68,9 @@ export default function Ask() {
   return (
     <div className="stack-lg">
       <section>
-        <h1>Ask the Companion</h1>
+        <h1>{t(user.language, 'ask.title')}</h1>
         <p className="muted">
-          Ask about your family — it answers only from what they chose to share with you.
+          {t(user.language, 'ask.subtitle')}
         </p>
       </section>
 
@@ -81,7 +82,7 @@ export default function Ask() {
           placeholder={user.language === 'hi' ? 'जैसे: दीपा का दिन कैसा था?' : "e.g. How was Deepa's day?"}
           aria-label="Your question"
         />
-        <button disabled={busy || !question.trim()}>{busy ? '…' : 'Ask'}</button>
+        <button disabled={busy || !question.trim()}>{busy ? '…' : t(user.language, 'ask.button')}</button>
       </form>
 
       <HoldToTalk onRecorded={onRecorded} disabled={busy} />

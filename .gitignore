@@ -16,6 +16,10 @@ backend/data/actions/*
 .env
 backend/.env
 
+# Logs & backups
+backend/logs/
+backups/
+
 # Node
 frontend/node_modules/
 frontend/dist/

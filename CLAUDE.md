@@ -41,7 +41,7 @@ password `aangan123`. Good first demo: log in as Aditya, ask
 ## Verification
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q     # 81 tests, must all pass
+cd backend && .venv/bin/python -m pytest tests/ -q     # full suite, must all pass
 cd frontend && npm run build                            # must compile clean
 ```
 
@@ -82,6 +82,14 @@ stay deterministic even when `.env` has keys.
 4. The spine tests (`tests/test_spine_*.py`) are the gate: if a change makes
    any of them fail, the change is wrong.
 5. Alert wording must never sound medical or diagnostic.
+
+## Useful scripts & ops
+
+- `backend/scripts/metrics.py` — pilot funnel/unit-economics report
+- `backend/scripts/reset_link.py <email>` — one-time password-reset link
+- `backend/scripts/backup.sh` — consistent backup (see docs/OPERATIONS.md)
+- `docker compose up` — single-container deploy (backend serves built frontend)
+- Entitlements/caps live in `backend/entitlements.py`; plan column on FamilyCircle
 
 ## Gotchas
 

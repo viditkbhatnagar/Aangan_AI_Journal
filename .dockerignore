@@ -1,0 +1,13 @@
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+frontend/dist
+backend/aangan.db
+backend/chroma_data
+backend/data/audio/*
+backend/data/actions/*
+backend/logs
+.git
+docs
+*.docx

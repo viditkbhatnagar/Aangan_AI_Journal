@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { useAuth } from '../auth';
+import { t } from '../i18n';
 
 function Moment({ moment }) {
   return (
@@ -14,6 +16,8 @@ function Moment({ moment }) {
 }
 
 export default function MemoryBook() {
+  const { user } = useAuth();
+  const lang = user.language;
   const [book, setBook] = useState(null);
 
   useEffect(() => {
@@ -25,8 +29,8 @@ export default function MemoryBook() {
   return (
     <div className="stack-lg">
       <section>
-        <h1>Memory book</h1>
-        <p className="muted">The moments your family chose to share — kept safe, together.</p>
+        <h1>{t(lang, 'memory.title')}</h1>
+        <p className="muted">{t(lang, 'memory.subtitle')}</p>
       </section>
 
       {book.on_this_day.length > 0 && (

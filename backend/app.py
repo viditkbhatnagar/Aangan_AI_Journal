@@ -1,10 +1,31 @@
 """Aangan backend. Run from backend/: uvicorn app:app --reload --port 8000"""
+import logging
+import logging.handlers
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 
 from config import settings
 from db import Base, engine
+
+
+def _configure_logging() -> None:
+    log_dir = Path(__file__).resolve().parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    handler = logging.handlers.RotatingFileHandler(
+        log_dir / "aangan.log", maxBytes=2_000_000, backupCount=3
+    )
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
+    root = logging.getLogger("aangan")
+    root.setLevel(logging.INFO)
+    if not root.handlers:
+        root.addHandler(handler)
+
+
+_configure_logging()
 from routes import (
     action_routes,
     activity_routes,
@@ -78,3 +99,20 @@ app.include_router(feedback_routes.router)
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+# --- single-container deployment: serve the built frontend (SPA) ---
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _FRONTEND_DIST.exists():
+    from fastapi.responses import FileResponse
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        candidate = (_FRONTEND_DIST / path).resolve()
+        if (
+            path
+            and candidate.is_file()
+            and str(candidate).startswith(str(_FRONTEND_DIST))
+        ):
+            return FileResponse(candidate)
+        return FileResponse(_FRONTEND_DIST / "index.html")

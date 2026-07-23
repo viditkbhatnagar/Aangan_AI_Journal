@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../auth';
+import { t } from '../i18n';
 import HoldToTalk from '../components/HoldToTalk';
 import ShareControls from '../components/ShareControls';
 import UpgradeCard from '../components/UpgradeCard';
@@ -168,6 +170,8 @@ function EntryCard({ entry, onChanged }) {
 }
 
 export default function Journal() {
+  const { user } = useAuth();
+  const lang = user.language;
   const [entries, setEntries] = useState([]);
   const [capture, setCapture] = useState(null);
   const [typing, setTyping] = useState(false);
@@ -221,8 +225,8 @@ export default function Journal() {
   return (
     <div className="stack-lg">
       <section>
-        <h1>Your journal</h1>
-        <p className="muted">Everything here is private until you choose to share it.</p>
+        <h1>{t(lang, 'journal.title')}</h1>
+        <p className="muted">{t(lang, 'journal.subtitle')}</p>
       </section>
 
       <HoldToTalk onRecorded={onRecorded} disabled={busy} />
@@ -235,7 +239,7 @@ export default function Journal() {
 
       <div style={{ textAlign: 'center' }}>
         <button className="quiet" onClick={() => setTyping(!typing)}>
-          {typing ? 'Never mind' : 'Prefer to type it?'}
+          {typing ? t(lang, 'journal.type.cancel') : t(lang, 'journal.type')}
         </button>
       </div>
       {typing && (
@@ -244,9 +248,9 @@ export default function Journal() {
             rows={4}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="How was your day?"
+            placeholder={t(lang, 'journal.type.placeholder')}
           />
-          <button disabled={busy || !text.trim()}>Keep this</button>
+          <button disabled={busy || !text.trim()}>{t(lang, 'journal.type.submit')}</button>
         </form>
       )}
 

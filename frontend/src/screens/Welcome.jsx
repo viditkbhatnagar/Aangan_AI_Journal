@@ -21,7 +21,8 @@ export default function Welcome() {
       if (mode === 'login') {
         await login(form.email, form.password);
       } else {
-        await register(form);
+        const source = new URLSearchParams(window.location.search).get('ref');
+        await register({ ...form, source });
         if (circleChoice === 'create' && circleValue.trim()) {
           await api.post('/circles', { name: circleValue.trim() });
         } else if (circleChoice === 'join' && circleValue.trim()) {

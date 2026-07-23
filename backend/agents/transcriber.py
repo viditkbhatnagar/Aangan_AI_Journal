@@ -46,6 +46,9 @@ def transcribe(audio_path: str) -> Transcription:
     except TranscriptionUnavailable:
         raise
     except Exception as exc:
+        import logging
+
+        logging.getLogger("aangan.transcriber").warning("deepgram failed: %s", exc)
         raise TranscriptionUnavailable(
             "Transcription didn't work just now. You can type your entry instead."
         ) from exc
