@@ -54,5 +54,10 @@ class Settings(BaseSettings):
     # Anti alert-fatigue: max alerts per recipient per day.
     alert_daily_cap: int = 5
 
+    # Async capture: save the entry instantly, enrich (summary/facts/alerts)
+    # in a background task; the UI polls /entries/{id}/enrichment. Off by
+    # default so seed.py and the tests keep the deterministic sync pipeline.
+    async_capture: bool = False
+
 
 settings = Settings()

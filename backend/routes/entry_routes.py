@@ -1,7 +1,7 @@
 import os
 import time
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from agents import consent_guardian, librarian
@@ -20,13 +20,16 @@ AUDIO_EXTENSIONS = {"audio/webm": "webm", "audio/mp4": "m4a", "audio/mpeg": "mp3
 
 
 @router.post("/entries", response_model=CaptureOut)
-async def create_entry(
+def create_entry(
+    background_tasks: BackgroundTasks,
     audio: UploadFile | None = File(default=None),
     transcript: str | None = Form(default=None),
     language: str | None = Form(default=None),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # plain def: FastAPI runs it in a threadpool, so transcription and LLM
+    # calls never block the event loop for other members
     circle_id = require_circle_id(db, user)
     if audio is None and not (transcript and transcript.strip()):
         raise HTTPException(status_code=422, detail="Record something or type your entry.")
@@ -45,7 +48,7 @@ async def create_entry(
         os.makedirs(settings.audio_dir, exist_ok=True)
         audio_path = os.path.join(settings.audio_dir, f"{user.id}-{int(time.time() * 1000)}.{ext}")
         with open(audio_path, "wb") as f:
-            f.write(await audio.read())
+            f.write(audio.file.read())
 
     try:
         result = capture.run_capture(
@@ -53,6 +56,7 @@ async def create_entry(
             audio_path=audio_path,
             transcript=transcript.strip() if transcript else None,
             language=language,
+            background=background_tasks,
         )
     except TranscriptionUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc))
@@ -70,6 +74,39 @@ async def create_entry(
             if result.suggested_action
             else None
         ),
+    )
+
+
+@router.get("/entries/{entry_id}/enrichment", response_model=CaptureOut)
+def entry_enrichment(
+    entry_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """Poll target for async capture: the same CaptureOut shape, filled in
+    once the background enrichment marks the entry ready. Author-only."""
+    from models import Action
+
+    entry = db.get(JournalEntry, entry_id)
+    if entry is None or entry.author_id != user.id:
+        raise HTTPException(status_code=404, detail="No such entry.")
+    db.refresh(entry)
+    facts = list(entry.facts)
+    suggestions = (
+        consent_guardian.suggest_shares(entry, facts) if entry.status == "ready" else []
+    )
+    action = (
+        db.query(Action)
+        .filter(Action.source_entry_id == entry.id)
+        .order_by(Action.id.desc())
+        .first()
+    )
+    return CaptureOut(
+        entry=EntryOut.model_validate(entry),
+        share_suggestions=[
+            ShareSuggestionOut(kind=s.kind, fact_id=s.fact_id, text=s.text, reason=s.reason)
+            for s in suggestions
+        ],
+        applied_rules=list(entry.applied_rules or []),
+        suggested_action=ActionOut.model_validate(action) if action else None,
     )
 
 

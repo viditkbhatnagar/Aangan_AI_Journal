@@ -60,6 +60,9 @@ def keyless_mode(monkeypatch):
     monkeypatch.setattr(app_settings, "anthropic_api_key", None)
     monkeypatch.setattr(app_settings, "openai_api_key", None)
     monkeypatch.setattr(app_settings, "deepgram_api_key", None)
+    # deterministic sync pipeline regardless of ASYNC_CAPTURE in .env;
+    # async-path tests opt back in with their own monkeypatch
+    monkeypatch.setattr(app_settings, "async_capture", False)
     llm.reset_for_tests()
     activity._feeds.clear()
     ratelimit.reset()

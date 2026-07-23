@@ -22,12 +22,18 @@ def create_action(
     intent: str,
     related_alert_id: int | None = None,
     plan_hint: dict | None = None,
+    source_entry_id: int | None = None,
 ) -> Action:
     if related_alert_id is not None:
         alert = db.get(Alert, related_alert_id)
         if alert is None or alert.recipient_id != user.id:
             raise LookupError("No such alert.")
-    action = Action(created_by=user.id, intent=intent.strip(), related_alert_id=related_alert_id)
+    action = Action(
+        created_by=user.id,
+        intent=intent.strip(),
+        related_alert_id=related_alert_id,
+        source_entry_id=source_entry_id,
+    )
     db.add(action)
     db.flush()
     plan = doer.prepare(db, action, plan_hint)  # -> awaiting_approval

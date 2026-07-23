@@ -115,6 +115,7 @@ class EntryOut(ORMModel):
     language: str
     duration_sec: int
     visibility: str
+    status: str = "ready"  # 'enriching' while async capture is still working
     created_at: datetime
     facts: list[FactOut] = []
 

@@ -106,6 +106,10 @@ class JournalEntry(Base):
     language: Mapped[str] = mapped_column(String, default="en", nullable=False)
     duration_sec: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     visibility: Mapped[Visibility] = _vis_column()
+    # async pipeline: 'enriching' while summary/facts/alerts are still being
+    # produced in the background; 'ready' otherwise (always 'ready' in sync mode)
+    status: Mapped[str] = mapped_column(String, default="ready", nullable=False)
+    applied_rules: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     facts: Mapped[list["Fact"]] = relationship(back_populates="entry")
@@ -282,6 +286,10 @@ class Action(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     related_alert_id: Mapped[int | None] = mapped_column(ForeignKey("alerts.id"), nullable=True)
+    # the journal entry whose delegation drafted this action (async lookup)
+    source_entry_id: Mapped[int | None] = mapped_column(
+        ForeignKey("journal_entries.id"), nullable=True
+    )
     intent: Mapped[str] = mapped_column(Text, nullable=False)
     plan: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(

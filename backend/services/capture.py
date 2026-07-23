@@ -1,5 +1,16 @@
 """Capture pipeline (spec Section 9). The `transcript` parameter is the
-no-Deepgram path: seed.py and the type-it-instead flow inject text directly."""
+no-Deepgram path: seed.py and the type-it-instead flow inject text directly.
+
+Two shapes, chosen by settings.async_capture:
+- sync (default, and always for seed/tests): the whole pipeline runs in the
+  request and CaptureOut carries summary/facts/suggestions immediately.
+- async: the entry is saved and committed fast with status='enriching';
+  summarize/extract/rules/index/alerts/actions continue in a background
+  task on a fresh session, and the UI polls GET /entries/{id}/enrichment.
+Transcription always stays in the request — its 503 fallback contract
+(switch to typing) depends on the status code reaching the client.
+"""
+import logging
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
@@ -9,6 +20,8 @@ from agents.consent_guardian import ShareSuggestion
 from models import Action, Fact, JournalEntry, User
 from services import activity, metering
 from services.events import record_event
+
+_logger = logging.getLogger("aangan.capture")
 
 
 @dataclass
@@ -28,23 +41,13 @@ def run_capture(
     audio_path: str | None = None,
     transcript: str | None = None,
     language: str | None = None,
+    background=None,
 ) -> CaptureResult:
-    with metering.context(user_id=author.id, db=db):
-        return _run_capture_metered(
-            db, author, circle_id,
-            audio_path=audio_path, transcript=transcript, language=language,
-        )
+    """background: a FastAPI BackgroundTasks. Async enrichment happens only
+    when settings.async_capture is on AND a background runner was provided —
+    seed.py and direct callers always get the full synchronous pipeline."""
+    from config import settings
 
-
-def _run_capture_metered(
-    db: Session,
-    author: User,
-    circle_id: int,
-    *,
-    audio_path: str | None,
-    transcript: str | None,
-    language: str | None,
-) -> CaptureResult:
     duration = 0
     if transcript is None:
         activity.emit(author.id, "Transcriber", "Listening to your recording…")
@@ -58,6 +61,8 @@ def _run_capture_metered(
         )
     language = language or author.language or "en"
 
+    go_async = bool(settings.async_capture and background is not None)
+
     # 1-2) entry row, private by default
     entry = JournalEntry(
         author_id=author.id,
@@ -66,14 +71,57 @@ def _run_capture_metered(
         transcript=transcript,
         language=language,
         duration_sec=duration,
+        status="enriching" if go_async else "ready",
     )
     db.add(entry)
     db.flush()
-    metering.update_context(entry_id=entry.id)
+
+    if go_async:
+        db.commit()  # durable before the request returns
+        background.add_task(enrich_entry, entry.id, author.id)
+        activity.emit(author.id, "Journal", "Saved. Making notes in the background…")
+        return CaptureResult(entry=entry)
+
+    with metering.context(user_id=author.id, db=db, entry_id=entry.id):
+        return _enrich(db, author, entry)
+
+
+def enrich_entry(entry_id: int, author_id: int) -> None:
+    """Background phase: fresh session (the request's is closed by now),
+    fresh metering context. Failures are logged, never raised — the entry
+    stays readable either way and is always marked ready."""
+    import db as db_module
+
+    session = db_module.SessionLocal()
+    try:
+        entry = session.get(JournalEntry, entry_id)
+        author = session.get(User, author_id)
+        if entry is None or author is None:
+            return
+        with metering.context(user_id=author_id, db=session, entry_id=entry_id):
+            _enrich(session, author, entry)
+    except Exception:
+        _logger.exception("background enrichment failed for entry %s", entry_id)
+        try:
+            session.rollback()
+            row = session.get(JournalEntry, entry_id)
+            if row is not None:
+                row.status = "ready"  # never leave an entry stuck in 'enriching'
+                session.commit()
+        except Exception:
+            _logger.exception("could not mark entry %s ready after failure", entry_id)
+    finally:
+        session.close()
+
+
+def _enrich(db: Session, author: User, entry: JournalEntry) -> CaptureResult:
+    """Steps 3-9. Ordering invariant: consent rules run BEFORE the vector
+    index so Chroma metadata carries post-rule visibility."""
+    transcript = entry.transcript
 
     # 3-4) summary and shareable snippets
     activity.emit(author.id, "Summarizer", "Writing a gentle summary…")
-    summary = summarizer.summarize(transcript, language)
+    summary = summarizer.summarize(transcript, entry.language)
     entry.summary = summary.summary
 
     # 5) facts, private by default
@@ -83,7 +131,7 @@ def _run_capture_metered(
         fact = Fact(
             entry_id=entry.id,
             author_id=author.id,
-            circle_id=circle_id,
+            circle_id=entry.circle_id,
             type=draft.type,
             content=draft.content,
             structured=draft.structured,
@@ -116,11 +164,15 @@ def _run_capture_metered(
     _run_alerter(db, entry, facts)
 
     # 9) does this entry ask for something to be DONE? draft it for approval
-    suggested_action = _suggest_action(db, author, transcript)
+    suggested_action = _suggest_action(db, author, transcript, entry_id=entry.id)
+
+    entry.applied_rules = applied_rules
+    entry.status = "ready"
+    db.commit()
 
     record_event(author.id, "entry", {
         "entry_id": entry.id,
-        "voice_seconds": duration,
+        "voice_seconds": entry.duration_sec,
         "facts": len(facts),
     })
 
@@ -151,13 +203,15 @@ def _run_alerter(db: Session, entry: JournalEntry, facts: list[Fact]) -> None:
         )
 
 
-def _suggest_action(db: Session, author: User, transcript: str) -> Action | None:
+def _suggest_action(
+    db: Session, author: User, transcript: str, *, entry_id: int | None = None
+) -> Action | None:
     intent = doer.detect_action_intent(transcript)
     if not intent:
         return None
     from services import actions as actions_service
 
-    action = actions_service.create_action(db, author, intent)
+    action = actions_service.create_action(db, author, intent, source_entry_id=entry_id)
     activity.emit(
         author.id, "Doer",
         f"Prepared “{intent[:60]}” — waiting for YOUR approval on the Actions page.",

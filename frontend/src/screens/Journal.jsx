@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
@@ -183,6 +183,31 @@ export default function Journal() {
   const refresh = useCallback(async () => setEntries(await api.get('/entries')), []);
   useEffect(() => { refresh(); }, [refresh]);
 
+  // async capture: the save returns instantly with status 'enriching';
+  // poll the enrichment endpoint until the background agents finish
+  const pollTimer = useRef(null);
+  useEffect(() => () => clearInterval(pollTimer.current), []);
+
+  function pollEnrichment(entryId) {
+    clearInterval(pollTimer.current);
+    let attempts = 0;
+    pollTimer.current = setInterval(async () => {
+      attempts += 1;
+      try {
+        const enriched = await api.get(`/entries/${entryId}/enrichment`);
+        if (enriched.entry.status === 'ready') {
+          clearInterval(pollTimer.current);
+          setCapture(enriched);
+          await refresh();
+        } else if (attempts > 40) {
+          clearInterval(pollTimer.current);
+        }
+      } catch {
+        clearInterval(pollTimer.current);
+      }
+    }, 1500);
+  }
+
   async function submit(formData) {
     setBusy(true);
     setNotice(null);
@@ -192,6 +217,7 @@ export default function Journal() {
       setText('');
       setTyping(false);
       await refresh();
+      if (result.entry.status === 'enriching') pollEnrichment(result.entry.id);
     } catch (err) {
       if (err.status === 402) {
         setCapMessage(err.message);
@@ -235,6 +261,11 @@ export default function Journal() {
         <a href="/api/legal/privacy" target="_blank" rel="noreferrer">privacy</a>
       </p>
       {busy && <p className="muted" style={{ textAlign: 'center' }}>Listening back and making notes…</p>}
+      {!busy && capture?.entry?.status === 'enriching' && (
+        <p className="muted" role="status" style={{ textAlign: 'center' }}>
+          Saved ✓ — still making notes in the background (watch the Agents panel)…
+        </p>
+      )}
       {notice && <p className="muted" role="status">{notice}</p>}
 
       <div style={{ textAlign: 'center' }}>
