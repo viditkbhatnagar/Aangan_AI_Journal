@@ -69,7 +69,7 @@ Advantage claims the plan may make **because code enforces them**: privacy-by-ar
 - Explicitly rejected for the plan: advertising (poisons trust posture), selling data/insights (contradicts values; rubric flags it), transaction commissions on Doer purchases (conflict-of-interest with "suggest, never sell"; disclose if ever added).
 
 ### Sections 9–10 — AI/technology plan & prototype
-Largely already true — see Part B evidence table. The technology-plan section of the report can describe the real stack (FastAPI, SQLite→Postgres path, Chroma, local MiniLM embeddings, provider-chain LLM, Deepgram, JWT auth, Playwright doer, 116 tests incl. adversarial privacy tests) and the real architecture diagram. Prototype section: real screenshots exist (login, home, alerts, agents panel); user-journey friction points and ≥3-user testing remain to be executed (Part D).
+Largely already true — see Part B evidence table. The technology-plan section of the report can describe the real stack (FastAPI, SQLite→Postgres path, Chroma, local multilingual-MiniLM embeddings (en+hi), provider-chain LLM, Deepgram, JWT auth, Playwright doer, 136 tests incl. adversarial privacy tests) and the real architecture diagram. Prototype section: real screenshots exist (login, home, alerts, agents panel); user-journey friction points and ≥3-user testing remain to be executed (Part D).
 
 ### Section 11 — Marketing & customer acquisition
 - Positioning: "the private family courtyard" — anti-surveillance, anti-noise family tech.
@@ -174,10 +174,22 @@ strings (#14), 5-minute recording cap (#15). From P2: audit trail, code-level
 never-medical enforcement, export + account erasure, ops/IR runbook
 (docs/OPERATIONS.md), 18+ policy. From P3: referral `?ref=` attribution.
 
+**Closed in the 2026-07-23 follow-up wave:** Alembic migrations (baseline +
+per-feature revisions, `scripts/migrate.py` handles fresh/pre-alembic/managed
+DBs), TOTP MFA (authenticator enrollment in Me, challenge-scoped tokens),
+multi-circle membership (validated X-Circle-Id switcher; spine test now
+membership-in-row's-circle; cross-circle grant-purge bug fixed), multilingual
+embeddings (paraphrase-multilingual-MiniLM-L12-v2 by default — cross-lingual
+hit@3 0%→100% per `scripts/eval_embeddings.py` — with model-stamped
+collections and `scripts/reindex.py`), and the async capture pipeline
+(instant save + background enrichment, `/entries/{id}/enrichment` poll).
+Evidence pack: D1 interview kit + D2 usability kit (docs/research/) and the
+D3 financial model (`scripts/financial_model.py`, docs/FINANCIAL_MODEL.md).
+
 **Still open (deliberate):** live payment gateway (needs merchant account —
 fake-door measures demand meanwhile), cloud deployment (needs an account —
-one `docker compose up` away), MFA, async capture pipeline, Alembic,
-multi-circle UI, multilingual embedding swap, official commerce APIs, and the
+one `docker compose up` away), official commerce APIs, the human sessions
+themselves (D1 interviews, D2 tests), legal sign-off on the D4 pack, and the
 session-persistence trade (memory-only JWT kept as a privacy posture — to be
 validated in D2 user testing).
 
@@ -207,7 +219,7 @@ multilingual embeddings · multi-circle · load test + Postgres path · commerce
 APIs.
 
 **Consistency fixes now:** ~~standardize the test count across docs~~ — done;
-all docs quote the current suite size (116).
+all docs quote the current suite size (136).
 
 ## Part D — Non-code evidence workstream
 

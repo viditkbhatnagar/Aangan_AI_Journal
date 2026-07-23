@@ -38,7 +38,7 @@ uvicorn app:app --reload --port 8000
 ```
 
 Notes for the first run:
-- `seed.py` downloads the local embedding model (~90 MB, one time), then works
+- `seed.py` downloads the local embedding model (~470 MB, one time), then works
   fully offline.
 - `--reload` tip: use `--reload-exclude 'chroma_data/*' --reload-exclude 'data/*'`
   to keep the vector store's own writes from re-triggering reloads.
@@ -103,7 +103,7 @@ backend/
   app.py                # FastAPI app and routes
   models.py             # users, circles, entries, facts, shares, rules,
                         # triggers, alerts, actions (SQLite via SQLAlchemy)
-  memory/               # Chroma vector store + local MiniLM embeddings
+  memory/               # Chroma vector store + local multilingual embeddings
   agents/               # one module per agent, plain Python:
     conductor           #   routes each ask through the agents below
     companion           #   the one warm face — answers only from returned snippets
@@ -121,7 +121,7 @@ backend/
 frontend/               # React + Vite; JWT held in memory only (no localStorage)
 ```
 
-Run the test suite (116 tests, including leak-proofing of the visibility spine):
+Run the test suite (136 tests, including leak-proofing of the visibility spine):
 
 ```bash
 cd backend && .venv/bin/python -m pytest tests/ -q

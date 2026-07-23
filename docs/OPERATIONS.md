@@ -81,6 +81,11 @@ backend/scripts/reset_link.py member@email   # prints a one-time /reset link, 24
 
 - CI (GitHub Actions) runs the full backend suite and the frontend build on
   every push.
-- Schema changes during the pilot require re-running `seed.py` (wipes data) or
-  a manual migration — Alembic is deliberately deferred until after the pilot.
+- Schema changes ship as Alembic revisions. `python scripts/migrate.py`
+  brings any database current (fresh → build, pre-alembic → stamp, managed →
+  upgrade); docker-compose runs it automatically before the server starts.
+  `seed.py` still rebuilds the demo world from scratch and stamps head.
+- Changing `EMBEDDING_MODEL` requires `python scripts/reindex.py` — the
+  collection is stamped with the model that built it and the app refuses to
+  start on a mismatch rather than serve degraded retrieval.
 - Rollback: previous image + last night's backup.

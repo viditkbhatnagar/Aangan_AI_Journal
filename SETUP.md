@@ -53,7 +53,7 @@ of voice, template answers instead of LLM prose):
 python seed.py
 ```
 
-First run downloads the local embedding model (~90 MB), then everything is
+First run downloads the local embedding model (~470 MB), then everything is
 offline except the optional key-backed features. The seed **wipes and
 rebuilds** `aangan.db` and `chroma_data/` — rerun it whenever you want a clean
 demo. It creates circle **Ghar** with four members (password `aangan123`):
@@ -105,7 +105,7 @@ A five-minute tour that exercises everything:
 ## 5. Tests and build
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q    # 116 tests — the privacy
+cd backend && .venv/bin/python -m pytest tests/ -q    # 136 tests — the privacy
                                                        # spine is the gate
 cd frontend && npm run build
 ```
@@ -119,7 +119,7 @@ Tests pin themselves to keyless mode: deterministic, no API spend.
 | `pip install` fails on passlib/crypt | You're on Python 3.13 — use 3.11/3.12 |
 | Voice button says transcription isn't set up | Add `DEEPGRAM_API_KEY` to `backend/.env`, restart uvicorn |
 | Answers sound template-y | No (or invalid) LLM key — check `OPENAI_API_KEY`; watch uvicorn logs |
-| `seed.py` looks stuck on first run | It's downloading the embedding model (~90 MB, one time) |
+| `seed.py` looks stuck on first run | It’s downloading the embedding model (~470 MB, one time) |
 | Port already in use | `lsof -nP -iTCP:8000 -sTCP:LISTEN` (or `:5173`) and kill it |
 | Purchase actions return a manual link | Chromium not installed — `playwright install chromium`, or just use the link (that's the graceful fallback) |
 | Uvicorn restart loop | You forgot the `--reload-exclude` flags — Chroma's writes retrigger reload |

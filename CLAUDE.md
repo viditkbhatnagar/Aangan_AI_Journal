@@ -65,9 +65,18 @@ stay deterministic even when `.env` has keys.
   - `llm.py` — provider chain: OpenAI/OpenRouter → Anthropic → deterministic
     fallback. Every LLM call must pass a `fallback=` callable.
 - `backend/services/capture.py` — the entry pipeline (also detects "you do it"
-  delegations and drafts an action awaiting approval); `services/actions.py` —
-  action lifecycle with the approval gate; `services/activity.py` — per-user
-  agent-activity feed shown in the UI's right-hand "Agents" panel
+  delegations and drafts an action awaiting approval). With `ASYNC_CAPTURE=true`
+  the entry saves instantly and enrichment (summary/facts/rules/alerts) runs in
+  a background task; the UI polls `GET /entries/{id}/enrichment`. Sync mode is
+  the default and what seed.py/tests use.
+- `services/actions.py` — action lifecycle with the approval gate;
+  `services/activity.py` — per-user agent-activity feed (right-hand "Agents"
+  panel); `services/circle_context.py` — the validated X-Circle-Id active
+  circle (users can belong to several circles; a switcher sits in the header)
+- `backend/alembic/` — migrations. `python scripts/migrate.py` brings any DB
+  current (fresh → build, pre-alembic → stamp, managed → upgrade)
+- Auth: TOTP MFA is optional per-user (enroll in Me → Security); challenge
+  tokens carry scope=mfa and are never accepted as sessions
 - `frontend/src/screens/` — one file per screen; `src/api.js` keeps the JWT in
   memory only (never localStorage)
 
@@ -86,6 +95,11 @@ stay deterministic even when `.env` has keys.
 ## Useful scripts & ops
 
 - `backend/scripts/metrics.py` — pilot funnel/unit-economics report
+- `backend/scripts/financial_model.py` — cost-per-family + 3-year P&L from
+  real metered usage (assumptions in docs/FINANCIAL_MODEL.md)
+- `backend/scripts/migrate.py` — bring the DB to the current schema revision
+- `backend/scripts/reindex.py` — rebuild vectors after an EMBEDDING_MODEL change
+- `backend/scripts/eval_embeddings.py` — en/hi retrieval eval (never in CI)
 - `backend/scripts/reset_link.py <email>` — one-time password-reset link
 - `backend/scripts/backup.sh` — consistent backup (see docs/OPERATIONS.md)
 - `docker compose up` — single-container deploy (backend serves built frontend)
@@ -96,7 +110,10 @@ stay deterministic even when `.env` has keys.
 - macOS system `python3` is 3.9 — always use `python3.11`/`python3.12`.
   Python 3.13 breaks passlib.
 - `uvicorn` must run from `backend/` (paths resolve relative to it).
-- `seed.py` wipes `aangan.db` + `chroma_data` and rebuilds them — that's
-  intentional; run it any time you want a clean demo.
-- First `seed.py`/embedding call downloads `all-MiniLM-L6-v2` (~90 MB, once).
+- `seed.py` wipes `aangan.db` + the vector collection and rebuilds them
+  (stamping the Alembic head) — intentional; run it for a clean demo.
+- First `seed.py`/embedding call downloads the embedding model once
+  (`paraphrase-multilingual-MiniLM-L12-v2`, ~470 MB). Changing
+  `EMBEDDING_MODEL` requires `python scripts/reindex.py` — the app refuses
+  to start against vectors built by a different model.
 - If port 8000/5173 is busy: `lsof -nP -iTCP:8000 -sTCP:LISTEN`.
