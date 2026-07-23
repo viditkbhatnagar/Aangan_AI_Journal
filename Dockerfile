@@ -14,7 +14,8 @@ WORKDIR /app/backend
 ENV PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false
 
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# --timeout/--retries: recover from stalled wheel downloads instead of hanging
+RUN pip install --no-cache-dir --timeout 60 --retries 5 -r requirements.txt
 
 COPY backend/ .
 COPY --from=frontend /build/dist /app/frontend/dist
