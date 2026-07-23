@@ -105,7 +105,7 @@ A five-minute tour that exercises everything:
 ## 5. Tests and build
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q    # 76 tests — the privacy
+cd backend && .venv/bin/python -m pytest tests/ -q    # 81 tests — the privacy
                                                        # spine is the gate
 cd frontend && npm run build
 ```

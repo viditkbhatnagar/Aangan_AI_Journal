@@ -41,7 +41,7 @@ password `aangan123`. Good first demo: log in as Aditya, ask
 ## Verification
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q     # 76 tests, must all pass
+cd backend && .venv/bin/python -m pytest tests/ -q     # 81 tests, must all pass
 cd frontend && npm run build                            # must compile clean
 ```
 
