@@ -34,6 +34,7 @@ class User(Base):
     voice_sample_path: Mapped[str | None] = mapped_column(String, nullable=True)
     accepted_policy_version: Mapped[str | None] = mapped_column(String, nullable=True)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     memberships: Mapped[list["Membership"]] = relationship(back_populates="user")
@@ -167,6 +168,51 @@ class Alert(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     suggested_action: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String, default="new", nullable=False)  # new|seen|acted|dismissed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class LlmCall(Base):
+    """One row per LLM helper invocation — the unit-economics ground truth.
+    provider='fallback' rows make the LLM-vs-fallback quality metric honest."""
+
+    __tablename__ = "llm_calls"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    agent: Mapped[str] = mapped_column(String, nullable=False)
+    provider: Mapped[str] = mapped_column(String, nullable=False)  # openai|anthropic|fallback
+    model: Mapped[str | None] = mapped_column(String, nullable=True)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    entry_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ask_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AskRecord(Base):
+    """One row per Companion question — the countable freemium unit."""
+
+    __tablename__ = "asks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    circle_id: Mapped[int] = mapped_column(ForeignKey("family_circles.id"), nullable=False, index=True)
+    answered_by: Mapped[str] = mapped_column(String, default="fallback", nullable=False)  # llm|fallback
+    snippet_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    audio_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ProductEvent(Base):
+    """First-party funnel events — no third-party trackers, ever."""
+
+    __tablename__ = "product_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    properties: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

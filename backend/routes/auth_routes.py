@@ -33,6 +33,9 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
     )
     db.add(user)
     db.commit()
+    from services.events import record_event
+
+    record_event(user.id, "registered", {"language": user.language})
     return TokenOut(access_token=create_token(user))
 
 

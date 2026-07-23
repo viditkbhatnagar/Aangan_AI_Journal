@@ -35,13 +35,16 @@ async def ask(
         except (ValueError, AttributeError):
             question = None
 
+    audio_seconds = 0
     if audio is not None:
         os.makedirs(settings.audio_dir, exist_ok=True)
         path = os.path.join(settings.audio_dir, f"ask-{user.id}-{int(time.time() * 1000)}.webm")
         with open(path, "wb") as f:
             f.write(await audio.read())
         try:
-            question = transcriber.transcribe(path).text
+            transcription = transcriber.transcribe(path)
+            question = transcription.text
+            audio_seconds = transcription.duration_sec
         except TranscriptionUnavailable as exc:
             raise HTTPException(status_code=503, detail=str(exc))
         finally:
@@ -52,6 +55,25 @@ async def ask(
         raise HTTPException(status_code=422, detail="Ask me something first. 🙂")
 
     result = conductor.handle_ask(db, user, question.strip())
+
+    # metering: the countable freemium unit + funnel event
+    from auth import get_user_circle_id
+    from models import AskRecord
+    from services import metering
+    from services.events import record_event
+
+    circle_id = get_user_circle_id(db, user)
+    if circle_id is not None:
+        db.add(AskRecord(
+            user_id=user.id,
+            circle_id=circle_id,
+            answered_by="llm" if metering.last_provenance.get("provider") != "fallback" else "fallback",
+            snippet_count=len(result.snippets),
+            audio_seconds=audio_seconds,
+        ))
+        db.commit()
+    record_event(user.id, "ask", {"snippets": len(result.snippets)})
+
     return AskOut(
         answer=result.answer,
         language=result.language,

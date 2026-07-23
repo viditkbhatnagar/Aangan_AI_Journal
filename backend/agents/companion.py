@@ -74,4 +74,5 @@ def compose_answer(
         system=SYSTEM,
         model=settings.model_chat,
         fallback=lambda: _fallback_answer(user, snippets, relationships),
+        agent="Companion",
     )

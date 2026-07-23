@@ -114,6 +114,7 @@ def prepare(db: Session, action: Action, plan_hint: dict | None = None) -> dict:
             system=DRAFT_SYSTEM,
             fallback=lambda: f"Thinking of you! ({action.intent})",
             max_tokens=200,
+            agent="Doer",
         )
         plan = {
             "type": "message",

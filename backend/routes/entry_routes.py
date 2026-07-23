@@ -146,4 +146,11 @@ def share_entry(
     if entry is None or entry.author_id != user.id:
         raise HTTPException(status_code=404, detail="No such entry.")
     db.refresh(entry)
+    from services.events import record_event
+
+    record_event(user.id, "share", {
+        "entry_id": entry_id,
+        "fact_id": body.fact_id,
+        "visibility": body.visibility,
+    })
     return entry

@@ -55,6 +55,7 @@ def summarize(transcript: str, language: str = "en") -> Summary:
         system=SYSTEM,
         schema=SUMMARY_SCHEMA,
         fallback=lambda: _fallback(transcript),
+        agent="Summarizer",
     )
     return Summary(
         summary=str(result.get("summary") or transcript[:300]),

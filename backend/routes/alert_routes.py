@@ -34,6 +34,9 @@ def set_alert_status(
         raise HTTPException(status_code=404, detail="No such alert.")
     alert.status = body.status
     db.commit()
+    from services.events import record_event
+
+    record_event(user.id, f"alert_{body.status}", {"alert_id": alert.id})
     return alert
 
 

@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from agents import consent_guardian, doer, extractor, librarian, summarizer, transcriber
 from agents.consent_guardian import ShareSuggestion
 from models import Action, Fact, JournalEntry, User
-from services import activity
+from services import activity, metering
+from services.events import record_event
 
 
 @dataclass
@@ -27,6 +28,22 @@ def run_capture(
     audio_path: str | None = None,
     transcript: str | None = None,
     language: str | None = None,
+) -> CaptureResult:
+    with metering.context(user_id=author.id):
+        return _run_capture_metered(
+            db, author, circle_id,
+            audio_path=audio_path, transcript=transcript, language=language,
+        )
+
+
+def _run_capture_metered(
+    db: Session,
+    author: User,
+    circle_id: int,
+    *,
+    audio_path: str | None,
+    transcript: str | None,
+    language: str | None,
 ) -> CaptureResult:
     duration = 0
     if transcript is None:
@@ -52,6 +69,7 @@ def run_capture(
     )
     db.add(entry)
     db.flush()
+    metering.update_context(entry_id=entry.id)
 
     # 3-4) summary and shareable snippets
     activity.emit(author.id, "Summarizer", "Writing a gentle summary…")
@@ -99,6 +117,12 @@ def run_capture(
 
     # 9) does this entry ask for something to be DONE? draft it for approval
     suggested_action = _suggest_action(db, author, transcript)
+
+    record_event(author.id, "entry", {
+        "entry_id": entry.id,
+        "voice_seconds": duration,
+        "facts": len(facts),
+    })
 
     return CaptureResult(
         entry=entry,

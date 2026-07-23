@@ -14,4 +14,5 @@ def bridge(text: str, source_lang: str, target_lang: str) -> str:
             "Return only the translation."
         ),
         fallback=lambda: text,
+        agent="Interpreter",
     )

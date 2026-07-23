@@ -30,8 +30,13 @@ def relationship_labels(db: Session, user: User) -> dict[int, str]:
     return {r.to_user_id: r.label for r in rows}
 
 def handle_ask(db: Session, user: User, question: str) -> AskResult:
-    from services import activity
+    from services import activity, metering
 
+    with metering.context(user_id=user.id):
+        return _handle_ask_metered(db, user, question, activity)
+
+
+def _handle_ask_metered(db: Session, user: User, question: str, activity) -> AskResult:
     activity.emit(user.id, "Conductor", "Routing your question through the agents…")
     snippets = librarian.search(db, user, question)
     activity.emit(

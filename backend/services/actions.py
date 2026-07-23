@@ -54,6 +54,13 @@ def approve_and_complete(db: Session, user: User, action_id: int) -> Action:
     result = doer.complete_action(db, action, user)  # -> completed, stops at safe handoff
     note = result.get("note", "")
     activity.emit(user.id, "Doer", f"Done: {note[:110]}" if note else "Done — over to you.")
+    from services.events import record_event
+
+    record_event(user.id, "action_approved", {
+        "action_id": action.id,
+        "kind": (action.plan or {}).get("type"),
+        "result": result.get("status"),
+    })
     return action
 
 

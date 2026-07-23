@@ -47,6 +47,7 @@ def _wording(author: User, recipient: User, fact: Fact, trigger: AlertTrigger) -
         system=WORDING_SYSTEM,
         fallback=fallback,
         max_tokens=200,
+        agent="Alerter",
     )
     return message, FALLBACK_ACTION.format(author=author.name)
 

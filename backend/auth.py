@@ -54,6 +54,11 @@ def get_current_user(
     user = db.get(User, user_id)
     if user is None:
         raise unauthorized
+    # retention ground truth: throttled last-seen update (max once per 5 min)
+    now = datetime.utcnow()
+    if user.last_seen_at is None or (now - user.last_seen_at) > timedelta(minutes=5):
+        user.last_seen_at = now
+        db.commit()
     return user
 
 

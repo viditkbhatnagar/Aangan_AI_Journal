@@ -124,6 +124,7 @@ def extract_facts(transcript: str, summary: str = "") -> list[FactDraft]:
         system=SYSTEM,
         schema=FACTS_SCHEMA,
         fallback=lambda: _fallback(transcript),
+        agent="Extractor",
     )
     drafts = []
     for raw in result.get("facts", []):

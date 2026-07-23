@@ -8,9 +8,11 @@
 """
 import json
 import re
+import time
 from collections.abc import Callable
 
 from config import settings
+from services import metering
 
 _anthropic_client = None
 _openai_client = None
@@ -54,7 +56,7 @@ def llm_available() -> bool:
     return bool(settings.openai_api_key or settings.anthropic_api_key)
 
 
-def _openai_complete(prompt: str, system: str, max_tokens: int) -> str | None:
+def _openai_complete(prompt: str, system: str, max_tokens: int, agent: str) -> str | None:
     """Try the configured model, then fall back through candidates the account
     actually has. Returns None if OpenAI can't serve the request."""
     global _openai_model, _openai_disabled
@@ -68,6 +70,7 @@ def _openai_complete(prompt: str, system: str, max_tokens: int) -> str | None:
     for model in candidates:
         if not model:
             continue
+        started = time.monotonic()
         try:
             # chat.completions works on both api.openai.com and OpenAI-compatible
             # gateways (OpenRouter). No token cap: max_tokens vs
@@ -82,6 +85,14 @@ def _openai_complete(prompt: str, system: str, max_tokens: int) -> str | None:
             text = (response.choices[0].message.content or "").strip()
             if text:
                 _openai_model = model
+                usage = getattr(response, "usage", None)
+                metering.record_llm(
+                    agent, "openai", model,
+                    getattr(usage, "prompt_tokens", 0) or 0,
+                    getattr(usage, "completion_tokens", 0) or 0,
+                    int((time.monotonic() - started) * 1000),
+                )
+                metering.last_provenance = {"provider": "openai", "model": model}
                 return text
             return None
         except AuthenticationError:
@@ -94,10 +105,13 @@ def _openai_complete(prompt: str, system: str, max_tokens: int) -> str | None:
     return None
 
 
-def _anthropic_complete(prompt: str, system: str, model: str | None, max_tokens: int) -> str | None:
+def _anthropic_complete(
+    prompt: str, system: str, model: str | None, max_tokens: int, agent: str
+) -> str | None:
     client = _get_anthropic()
     if client is None:
         return None
+    started = time.monotonic()
     try:
         response = client.messages.create(
             model=model or settings.model_fast,
@@ -108,6 +122,15 @@ def _anthropic_complete(prompt: str, system: str, model: str | None, max_tokens:
         if response.stop_reason == "refusal":
             return None
         text = next((b.text for b in response.content if b.type == "text"), "")
+        if text.strip():
+            usage = getattr(response, "usage", None)
+            metering.record_llm(
+                agent, "anthropic", model or settings.model_fast,
+                getattr(usage, "input_tokens", 0) or 0,
+                getattr(usage, "output_tokens", 0) or 0,
+                int((time.monotonic() - started) * 1000),
+            )
+            metering.last_provenance = {"provider": "anthropic", "model": model or settings.model_fast}
         return text.strip() or None
     except Exception:
         return None
@@ -120,11 +143,16 @@ def complete(
     fallback: Callable[[], str],
     model: str | None = None,
     max_tokens: int = 1024,
+    agent: str = "agent",
 ) -> str:
-    text = _openai_complete(prompt, system, max_tokens)
+    text = _openai_complete(prompt, system, max_tokens, agent)
     if text is None:
-        text = _anthropic_complete(prompt, system, model, max_tokens)
-    return text if text else fallback()
+        text = _anthropic_complete(prompt, system, model, max_tokens, agent)
+    if text:
+        return text
+    metering.record_llm(agent, "fallback", None, 0, 0, 0)
+    metering.last_provenance = {"provider": "fallback", "model": None}
+    return fallback()
 
 
 _JSON_FENCE = re.compile(r"^```(?:json)?\s*|\s*```$", re.M)
@@ -138,6 +166,7 @@ def complete_json(
     fallback: Callable[[], dict | list],
     model: str | None = None,
     max_tokens: int = 2048,
+    agent: str = "agent",
 ) -> dict | list:
     """Structured completion. OpenAI path asks for JSON matching the schema and
     parses it; Anthropic path uses output_config json_schema. Any failure
@@ -147,7 +176,7 @@ def complete_json(
         + "\nReply with ONLY a JSON object matching this JSON schema — no prose, no code fences:\n"
         + json.dumps(schema)
     )
-    text = _openai_complete(prompt, json_system, max_tokens)
+    text = _openai_complete(prompt, json_system, max_tokens, agent)
     if text is not None:
         try:
             return json.loads(_JSON_FENCE.sub("", text).strip())
@@ -169,6 +198,8 @@ def complete_json(
                 return json.loads(text)
         except Exception:
             pass
+    metering.record_llm(agent, "fallback", None, 0, 0, 0)
+    metering.last_provenance = {"provider": "fallback", "model": None}
     return fallback()
 
 
