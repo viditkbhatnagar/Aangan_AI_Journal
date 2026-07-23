@@ -29,11 +29,36 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
+class LoginOut(BaseModel):
+    """Either a full session (access_token) or an MFA challenge (mfa_token).
+    Never status 401 for the challenge — the frontend treats 401 as logout."""
+    access_token: str | None = None
+    token_type: str = "bearer"
+    mfa_required: bool = False
+    mfa_token: str | None = None
+
+
+class MfaVerifyIn(BaseModel):
+    mfa_token: str
+    code: str = Field(min_length=6, max_length=8)
+
+
+class MfaCodeIn(BaseModel):
+    code: str = Field(min_length=6, max_length=8)
+
+
+class MfaSetupOut(BaseModel):
+    secret: str
+    otpauth_uri: str
+    qr_svg: str
+
+
 class UserOut(ORMModel):
     id: int
     name: str
     email: str
     language: str
+    mfa_enabled: bool = False  # state only — totp_secret must never appear here
     created_at: datetime
 
 

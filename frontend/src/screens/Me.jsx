@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { t } from '../i18n';
 import { useAuth } from '../auth';
+import MfaCard from '../components/MfaCard';
 
 function MoodStrip({ series }) {
   if (!series.length) return <p className="muted">Your moods will appear here as you journal.</p>;
@@ -253,6 +254,8 @@ export default function Me() {
         </p>
         <PlusFakeDoor />
       </section>
+
+      <MfaCard user={user} />
 
       <section className="card stack">
         <h2>⚙️ Settings</h2>

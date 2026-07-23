@@ -19,10 +19,25 @@ export function AuthProvider({ children }) {
     await refreshMembers();
   }, [refreshMembers]);
 
+  // MFA: login can return a challenge instead of a session. The pending
+  // challenge token lives only in this closure — never storage.
+  const [mfaToken, setMfaToken] = useState(null);
+
   const login = useCallback(async (email, password) => {
-    const { access_token } = await api.post('/auth/login', { email, password });
-    await finishLogin(access_token);
+    const result = await api.post('/auth/login', { email, password });
+    if (result.mfa_required) {
+      setMfaToken(result.mfa_token);
+      return { mfaRequired: true };
+    }
+    await finishLogin(result.access_token);
+    return { mfaRequired: false };
   }, [finishLogin]);
+
+  const verifyMfa = useCallback(async (code) => {
+    const { access_token } = await api.post('/auth/mfa/verify', { mfa_token: mfaToken, code });
+    setMfaToken(null);
+    await finishLogin(access_token);
+  }, [mfaToken, finishLogin]);
 
   const register = useCallback(async (payload) => {
     const { access_token } = await api.post('/auth/register', payload);
@@ -38,8 +53,8 @@ export function AuthProvider({ children }) {
   useEffect(() => { setUnauthorizedHandler(() => { setUser(null); setMembers([]); }); }, []);
 
   const value = useMemo(
-    () => ({ user, members, login, register, logout, refreshMembers }),
-    [user, members, login, register, logout, refreshMembers],
+    () => ({ user, members, login, verifyMfa, register, logout, refreshMembers }),
+    [user, members, login, verifyMfa, register, logout, refreshMembers],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

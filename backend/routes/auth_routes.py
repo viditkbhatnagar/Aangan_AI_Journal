@@ -3,10 +3,26 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from auth import create_token, get_current_user, hash_password, verify_password
+from auth import (
+    create_mfa_challenge_token,
+    create_token,
+    decode_mfa_challenge_token,
+    get_current_user,
+    hash_password,
+    verify_password,
+)
 from db import get_db
 from models import User
-from schemas import LoginIn, RegisterIn, TokenOut, UserOut
+from schemas import (
+    LoginIn,
+    LoginOut,
+    MfaCodeIn,
+    MfaSetupOut,
+    MfaVerifyIn,
+    RegisterIn,
+    TokenOut,
+    UserOut,
+)
 
 router = APIRouter(tags=["auth"])
 
@@ -41,7 +57,7 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
     return TokenOut(access_token=create_token(user))
 
 
-@router.post("/auth/login", response_model=TokenOut)
+@router.post("/auth/login", response_model=LoginOut)
 def login(body: LoginIn, db: Session = Depends(get_db)):
     from services import audit
 
@@ -49,8 +65,84 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     if user is None or not verify_password(body.password, user.password_hash):
         audit.record(None, "login_failed", "user", user.id if user else None)
         raise HTTPException(status_code=401, detail="That email or password didn't match.")
+    if user.mfa_enabled and user.totp_secret:
+        audit.record(user.id, "mfa_challenged", "user", user.id)
+        return LoginOut(mfa_required=True, mfa_token=create_mfa_challenge_token(user))
     audit.record(user.id, "login_ok", "user", user.id)
+    return LoginOut(access_token=create_token(user))
+
+
+@router.post("/auth/mfa/verify", response_model=TokenOut)
+def mfa_verify(body: MfaVerifyIn, db: Session = Depends(get_db)):
+    """Trade a challenge token + authenticator code for a full session.
+    Wrong code is 403 (not 401 — the frontend treats 401 as logout)."""
+    import pyotp
+
+    from services import audit
+
+    user_id = decode_mfa_challenge_token(body.mfa_token)
+    user = db.get(User, user_id) if user_id is not None else None
+    if user is None or not user.mfa_enabled or not user.totp_secret:
+        raise HTTPException(status_code=403, detail="Please log in again to get a fresh code prompt.")
+    if not pyotp.TOTP(user.totp_secret).verify(body.code.strip(), valid_window=1):
+        audit.record(user.id, "mfa_failed", "user", user.id)
+        raise HTTPException(status_code=403, detail="That code didn't match — try the next one from your app.")
+    audit.record(user.id, "login_ok", "user", user.id, {"mfa": True})
     return TokenOut(access_token=create_token(user))
+
+
+@router.post("/auth/mfa/setup", response_model=MfaSetupOut)
+def mfa_setup(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Mint a fresh secret (MFA stays OFF until /auth/mfa/enable confirms a code)."""
+    import pyotp
+    import qrcode
+    import qrcode.image.svg
+
+    if user.mfa_enabled:
+        raise HTTPException(status_code=409, detail="Two-factor is already on for this account.")
+    secret = pyotp.random_base32()
+    user.totp_secret = secret
+    db.commit()
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="Aangan")
+    svg = qrcode.make(uri, image_factory=qrcode.image.svg.SvgPathImage).to_string().decode()
+    return MfaSetupOut(secret=secret, otpauth_uri=uri, qr_svg=svg)
+
+
+@router.post("/auth/mfa/enable")
+def mfa_enable(
+    body: MfaCodeIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    import pyotp
+
+    from services import audit
+
+    if not user.totp_secret:
+        raise HTTPException(status_code=400, detail="Scan the setup code first.")
+    if not pyotp.TOTP(user.totp_secret).verify(body.code.strip(), valid_window=1):
+        raise HTTPException(status_code=403, detail="That code didn't match — try the next one from your app.")
+    user.mfa_enabled = True
+    db.commit()
+    audit.record(user.id, "mfa_enabled", "user", user.id)
+    return {"ok": True, "message": "Two-factor is on. Your courtyard gate has a second latch now. 🔐"}
+
+
+@router.post("/auth/mfa/disable")
+def mfa_disable(
+    body: MfaCodeIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    import pyotp
+
+    from services import audit
+
+    if not user.mfa_enabled or not user.totp_secret:
+        raise HTTPException(status_code=400, detail="Two-factor isn't on for this account.")
+    if not pyotp.TOTP(user.totp_secret).verify(body.code.strip(), valid_window=1):
+        raise HTTPException(status_code=403, detail="That code didn't match — try the next one from your app.")
+    user.mfa_enabled = False
+    user.totp_secret = None
+    db.commit()
+    audit.record(user.id, "mfa_disabled", "user", user.id)
+    return {"ok": True, "message": "Two-factor is off."}
 
 
 @router.post("/auth/reset", response_model=TokenOut)

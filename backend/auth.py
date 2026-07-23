@@ -35,6 +35,31 @@ def create_token(user: User) -> str:
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
+MFA_CHALLENGE_MINUTES = 5
+
+
+def create_mfa_challenge_token(user: User) -> str:
+    """Short-lived token proving password success only. get_current_user
+    rejects it — it can never act as a session."""
+    payload = {
+        "sub": str(user.id),
+        "scope": "mfa",
+        "exp": datetime.utcnow() + timedelta(minutes=MFA_CHALLENGE_MINUTES),
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def decode_mfa_challenge_token(token: str) -> int | None:
+    """Return the user id if this is a valid, unexpired challenge token."""
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        if payload.get("scope") != "mfa":
+            return None
+        return int(payload["sub"])
+    except (JWTError, KeyError, ValueError):
+        return None
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
@@ -48,6 +73,8 @@ def get_current_user(
         payload = jwt.decode(
             credentials.credentials, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
         )
+        if payload.get("scope") == "mfa":  # challenge tokens are not sessions
+            raise unauthorized
         user_id = int(payload["sub"])
     except (JWTError, KeyError, ValueError):
         raise unauthorized

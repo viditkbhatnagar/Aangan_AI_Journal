@@ -35,6 +35,9 @@ class User(Base):
     accepted_policy_version: Mapped[str | None] = mapped_column(String, nullable=True)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # TOTP two-factor: secret is a credential — never expose via API or export
+    totp_secret: Mapped[str | None] = mapped_column(String, nullable=True)
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     memberships: Mapped[list["Membership"]] = relationship(back_populates="user")

@@ -3,11 +3,12 @@ import { api } from '../api';
 import { useAuth } from '../auth';
 
 export default function Welcome() {
-  const { login, register, refreshMembers } = useAuth();
-  const [mode, setMode] = useState('login');
+  const { login, verifyMfa, register, refreshMembers } = useAuth();
+  const [mode, setMode] = useState('login'); // login | register | mfa
   const [form, setForm] = useState({ name: '', email: '', password: '', language: 'en', accept_terms: false });
   const [circleChoice, setCircleChoice] = useState('join'); // after register: join | create
   const [circleValue, setCircleValue] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -18,8 +19,14 @@ export default function Welcome() {
     setError(null);
     setBusy(true);
     try {
-      if (mode === 'login') {
-        await login(form.email, form.password);
+      if (mode === 'mfa') {
+        await verifyMfa(mfaCode.trim());
+      } else if (mode === 'login') {
+        const result = await login(form.email, form.password);
+        if (result?.mfaRequired) {
+          setMode('mfa');
+          setMfaCode('');
+        }
       } else {
         const source = new URLSearchParams(window.location.search).get('ref');
         await register({ ...form, source });
@@ -46,6 +53,32 @@ export default function Welcome() {
         <p className="muted">A quiet courtyard for your family's voices.</p>
       </div>
 
+      {mode === 'mfa' ? (
+        <form className="card stack" onSubmit={submit} aria-label="Two-factor code">
+          <div>
+            <label htmlFor="mfa-code">Code from your authenticator app</label>
+            <input
+              id="mfa-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              placeholder="123456"
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="error-text" role="alert">{error}</p>}
+          <button disabled={busy || mfaCode.trim().length < 6}>{busy ? 'One moment…' : 'Verify'}</button>
+          <button
+            type="button"
+            className="quiet"
+            onClick={() => { setMode('login'); setError(null); }}
+          >
+            Back to login
+          </button>
+        </form>
+      ) : (
       <form className="card stack" onSubmit={submit} aria-label={mode === 'login' ? 'Log in' : 'Create account'}>
         {mode === 'register' && (
           <div>
@@ -114,6 +147,7 @@ export default function Welcome() {
           {mode === 'login' ? 'New here? Create your account' : 'Already have an account? Log in'}
         </button>
       </form>
+      )}
     </main>
   );
 }
