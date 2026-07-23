@@ -2,6 +2,7 @@
 audience. Nudges connect humans — the wording prompts a person to reach out
 and must never sound like medical advice or a diagnosis. Rate limited so
 family never drowns in pings."""
+import re
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -24,6 +25,14 @@ FALLBACK_MESSAGES = {
     "default": "{author} shared something you asked to know about — a good moment to check in.",
 }
 FALLBACK_ACTION = "Give {author} a call and see how they're doing."
+
+# CODE-LEVEL safety boundary (never prompt-only): any clinical-sounding LLM
+# wording is rejected and replaced with the deterministic template.
+MEDICAL_RE = re.compile(
+    r"\b(diagnos\w*|prescri\w*|medicat\w*|dosage|symptom\w*|clinical|disease\w*|"
+    r"treatment\w*|therap\w*|doctor should|see a doctor immediately|emergency room)\b",
+    re.I,
+)
 
 
 def _day_start(now: datetime) -> datetime:
@@ -49,6 +58,13 @@ def _wording(author: User, recipient: User, fact: Fact, trigger: AlertTrigger) -
         max_tokens=200,
         agent="Alerter",
     )
+    if MEDICAL_RE.search(message):
+        from services import audit
+
+        audit.record(None, "alert_wording_rejected", "trigger", trigger.id, {
+            "reason": "medical-sounding wording", "rejected": message[:200],
+        })
+        message = fallback()
     return message, FALLBACK_ACTION.format(author=author.name)
 
 
@@ -127,4 +143,10 @@ def evaluate(
 
     if created:
         db.commit()
+        from services import audit
+
+        for alert in created:
+            audit.record(entry.author_id, "alert_created", "alert", alert.id, {
+                "recipient_id": alert.recipient_id, "severity": alert.severity,
+            })
     return created

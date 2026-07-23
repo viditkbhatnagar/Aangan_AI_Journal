@@ -21,6 +21,44 @@ function MoodStrip({ series }) {
   );
 }
 
+function DataControls({ onDeleted }) {
+  const [confirming, setConfirming] = useState(false);
+
+  async function exportData() {
+    const data = await api.get('/me/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'aangan-export.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function deleteAccount() {
+    await api.del('/me');
+    onDeleted();
+  }
+
+  return (
+    <div className="row" style={{ flexWrap: 'wrap' }}>
+      <button className="ghost" onClick={exportData}>Export my data</button>
+      {confirming ? (
+        <>
+          <button style={{ background: 'var(--color-danger)' }} onClick={deleteAccount}>
+            Yes, erase everything forever
+          </button>
+          <button className="quiet" onClick={() => setConfirming(false)}>Keep my account</button>
+        </>
+      ) : (
+        <button className="quiet" style={{ color: 'var(--color-danger)' }} onClick={() => setConfirming(true)}>
+          Delete my account…
+        </button>
+      )}
+    </div>
+  );
+}
+
 function HelpForm() {
   const [message, setMessage] = useState('');
   const [reply, setReply] = useState(null);
@@ -227,6 +265,7 @@ export default function Me() {
         <p className="muted">
           Everything you record starts private. Sharing is always your explicit choice.
         </p>
+        <DataControls onDeleted={logout} />
       </section>
     </div>
   );

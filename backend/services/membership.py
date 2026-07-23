@@ -63,6 +63,10 @@ def detach_user_from_circle(db: Session, user_id: int, circle_id: int) -> None:
         if entry is not None:
             librarian.upsert_entry(db, entry)
 
+    from services import audit
+
+    audit.record(user_id, "left_or_removed_from_circle", "circle", circle_id)
+
     # 6) circle housekeeping: promote an admin, or delete an empty circle
     remaining = (
         db.query(Membership).filter(Membership.circle_id == circle_id).all()

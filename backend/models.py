@@ -217,6 +217,22 @@ class ProductEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class AuditEvent(Base):
+    """Append-only trail of consequential events: consent changes, alerts,
+    approvals, logins, membership changes. Never updated, never deleted by
+    application code."""
+
+    __tablename__ = "audit_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    actor_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    event: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    object_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    object_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Feedback(Base):
     """Support messages and 'this looks wrong' reports — the correction loop."""
 

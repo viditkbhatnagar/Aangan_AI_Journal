@@ -61,6 +61,11 @@ def approve_and_complete(db: Session, user: User, action_id: int) -> Action:
         "kind": (action.plan or {}).get("type"),
         "result": result.get("status"),
     })
+    from services import audit
+
+    audit.record(user.id, "action_approved", "action", action.id, {
+        "kind": (action.plan or {}).get("type"), "result": result.get("status"),
+    })
     return action
 
 

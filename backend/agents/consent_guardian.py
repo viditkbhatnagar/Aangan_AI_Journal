@@ -97,6 +97,12 @@ def apply_rules(db: Session, author: User, facts: list[Fact]) -> list[str]:
                 for viewer_id in rule.audience:
                     db.add(ShareTarget(fact_id=fact.id, user_id=viewer_id))
             applied.append(rule.description)
+            from services import audit
+
+            audit.record(author.id, "rule_applied", "fact", fact.id, {
+                "rule_id": rule.id,
+                "visibility": fact.visibility.value,
+            })
             break
     if applied:
         db.commit()
@@ -127,6 +133,7 @@ def set_visibility(
     if visibility == Visibility.custom and not viewer_ids:
         raise ValueError("Choose at least one person to share with.")
 
+    old_visibility = row.visibility.value if row.visibility else "private"
     row.visibility = visibility
 
     # replace share targets for this item
@@ -149,4 +156,13 @@ def set_visibility(
     # keep the vector store's metadata in step with the new visibility
     entry = row.entry if fact_id else row
     librarian.upsert_entry(db, entry)
+
+    from services import audit
+
+    audit.record(
+        actor.id, "visibility_changed",
+        "fact" if fact_id else "entry",
+        fact_id or entry_id,
+        {"from": old_visibility, "to": visibility.value, "viewer_ids": viewer_ids or []},
+    )
     return row
