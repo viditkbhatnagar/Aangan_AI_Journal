@@ -85,11 +85,32 @@ function SharePrompts({ capture, onDismiss, onShared }) {
 
 function EntryCard({ entry, onChanged }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  async function remove() {
+    await api.del(`/entries/${entry.id}`);
+    onChanged();
+  }
+
   return (
     <article className="card stack">
       <div className="row between">
         <span className="muted">{new Date(entry.created_at).toLocaleString()}</span>
-        <span className={`pill ${entry.visibility}`}>{entry.visibility}</span>
+        <span className="row" style={{ width: 'auto' }}>
+          <span className={`pill ${entry.visibility}`}>{entry.visibility}</span>
+          {confirming ? (
+            <>
+              <button className="quiet" style={{ color: 'var(--color-danger)' }} onClick={remove}>
+                Erase forever
+              </button>
+              <button className="quiet" onClick={() => setConfirming(false)}>Keep</button>
+            </>
+          ) : (
+            <button className="quiet" onClick={() => setConfirming(true)} aria-label="Delete entry" title="Delete this entry everywhere">
+              🗑
+            </button>
+          )}
+        </span>
       </div>
       <p>{entry.summary || entry.transcript}</p>
       <button className="quiet" onClick={() => setOpen(!open)}>

@@ -81,6 +81,13 @@ def upsert_entry(db: Session, entry: JournalEntry, facts: list[Fact] | None = No
     store.upsert_documents(ids, texts, metas)
 
 
+def remove_entry(db: Session, entry: JournalEntry) -> None:
+    """Remove an entry and its facts from the vector store. Called BEFORE the
+    relational rows are deleted so the fact ids are still known."""
+    ids = [f"entry:{entry.id}"] + [f"fact:{fact.id}" for fact in entry.facts]
+    store.delete_documents(ids)
+
+
 def _snippet_from_row(db: Session, meta: dict, text: str) -> Snippet:
     author = db.get(User, meta["author_id"])
     return Snippet(

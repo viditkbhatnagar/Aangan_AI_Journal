@@ -4,12 +4,13 @@ import time
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from agents import consent_guardian
+from agents import consent_guardian, librarian
 from agents.transcriber import TranscriptionUnavailable
 from auth import get_current_user, require_circle_id
 from config import settings
 from db import get_db
-from models import JournalEntry, User, Visibility
+from models import Alert, Fact, JournalEntry, ShareTarget, User, Visibility
+from services import activity
 from schemas import ActionOut, CaptureOut, EntryOut, ShareIn, ShareSuggestionOut
 from services import capture
 
@@ -84,6 +85,34 @@ def get_entry(entry_id: int, user: User = Depends(get_current_user), db: Session
     if entry is None or entry.author_id != user.id:
         raise HTTPException(status_code=404, detail="No such entry.")
     return entry
+
+
+@router.delete("/entries/{entry_id}")
+def delete_entry(entry_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """The author (and only the author) can un-record a moment entirely:
+    entry, facts, share grants, alerts it caused, vectors, and the audio."""
+    entry = db.get(JournalEntry, entry_id)
+    if entry is None or entry.author_id != user.id:
+        raise HTTPException(status_code=404, detail="No such entry.")
+
+    fact_ids = [fact.id for fact in entry.facts]
+    librarian.remove_entry(db, entry)  # vector store first, while ids are known
+
+    db.query(Alert).filter(Alert.source_entry_id == entry_id).delete()
+    share_filter = ShareTarget.entry_id == entry_id
+    if fact_ids:
+        share_filter = share_filter | ShareTarget.fact_id.in_(fact_ids)
+    db.query(ShareTarget).filter(share_filter).delete(synchronize_session=False)
+    db.query(Fact).filter(Fact.entry_id == entry_id).delete()
+
+    audio_path = entry.audio_path
+    db.delete(entry)
+    db.commit()
+    if audio_path and os.path.exists(audio_path):
+        os.remove(audio_path)
+
+    activity.emit(user.id, "Librarian", "Erased that moment everywhere — as if it was never said.")
+    return {"ok": True}
 
 
 @router.post("/entries/{entry_id}/share", response_model=EntryOut)
