@@ -13,7 +13,7 @@ class ORMModel(BaseModel):
 class RegisterIn(BaseModel):
     name: str = Field(min_length=1)
     email: str = Field(min_length=3)
-    password: str = Field(min_length=4)
+    password: str = Field(min_length=8)
     language: str = "en"
     accept_terms: bool = False
 

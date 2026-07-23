@@ -55,16 +55,18 @@ def keyless_mode(monkeypatch):
     from agents import llm
     from config import settings as app_settings
 
-    from services import activity
+    from services import activity, ratelimit
 
     monkeypatch.setattr(app_settings, "anthropic_api_key", None)
     monkeypatch.setattr(app_settings, "openai_api_key", None)
     monkeypatch.setattr(app_settings, "deepgram_api_key", None)
     llm.reset_for_tests()
     activity._feeds.clear()
+    ratelimit.reset()
     yield
     llm.reset_for_tests()
     activity._feeds.clear()
+    ratelimit.reset()
 
 
 @pytest.fixture(autouse=True)

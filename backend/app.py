@@ -24,9 +24,36 @@ app = FastAPI(title="Aangan", version="1.0")
 
 @app.on_event("startup")
 def startup():
+    if settings.aangan_env == "production" and settings.jwt_secret == "change-me":
+        raise RuntimeError(
+            "Refusing to start in production with the default JWT_SECRET — "
+            "set a strong secret in backend/.env."
+        )
     Base.metadata.create_all(engine)
     os.makedirs(settings.audio_dir, exist_ok=True)
     os.makedirs(settings.actions_dir, exist_ok=True)
+
+
+@app.middleware("http")
+async def rate_limit(request, call_next):
+    from fastapi.responses import JSONResponse
+
+    from services import ratelimit
+
+    path = request.url.path
+    scope = None
+    if path.startswith("/auth/"):
+        scope, cap = "auth", settings.rate_limit_auth_max
+    elif path == "/ask":
+        scope, cap = "ask", settings.rate_limit_ask_max
+    if scope is not None:
+        ip = request.client.host if request.client else "unknown"
+        if not ratelimit.allow(ip, scope, cap, settings.rate_limit_window_sec):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Let's take a small breath — try again in a minute. 🌿"},
+            )
+    return await call_next(request)
 
 
 app.include_router(auth_routes.router)

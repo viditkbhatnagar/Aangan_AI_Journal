@@ -21,7 +21,10 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(password, password_hash)
+    try:
+        return pwd_context.verify(password, password_hash)
+    except Exception:  # corrupt/unknown hash must never 500 a login
+        return False
 
 
 def create_token(user: User) -> str:

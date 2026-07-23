@@ -11,6 +11,14 @@ class Settings(BaseSettings):
         env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
     )
 
+    # "dev" | "production" — production refuses unsafe defaults at startup
+    aangan_env: str = "dev"
+
+    # sliding-window rate limits, per IP
+    rate_limit_window_sec: int = 60
+    rate_limit_auth_max: int = 30
+    rate_limit_ask_max: int = 60
+
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
     # base_url lets any OpenAI-compatible gateway serve the same code —
