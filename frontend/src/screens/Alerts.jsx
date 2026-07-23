@@ -50,6 +50,19 @@ export default function Alerts() {
               <button className="ghost" onClick={() => setStatus(alert, 'seen')}>Mark seen</button>
             )}
             <button className="quiet" onClick={() => setStatus(alert, 'dismissed')}>Dismiss</button>
+            <button
+              className="quiet"
+              title="This looks wrong — tell a human"
+              onClick={async () => {
+                await api.post('/feedback', {
+                  kind: 'report', subject_kind: 'alert', subject_id: alert.id,
+                  message: alert.message,
+                });
+                setStatus(alert, 'seen');
+              }}
+            >
+              🚩
+            </button>
           </div>
         </article>
       ))}

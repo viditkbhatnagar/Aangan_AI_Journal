@@ -5,6 +5,27 @@ import HoldToTalk from '../components/HoldToTalk';
 import UpgradeCard from '../components/UpgradeCard';
 import { speak, stopSpeaking } from '../voice';
 
+function ReportButton({ subjectKind, subjectId = null, context }) {
+  const [sent, setSent] = useState(false);
+  if (sent) return <span className="muted" style={{ fontSize: '0.75rem' }}>noted 🙏</span>;
+  return (
+    <button
+      className="quiet"
+      title="This looks wrong — tell a human"
+      aria-label="Report this"
+      onClick={async () => {
+        await api.post('/feedback', {
+          kind: 'report', subject_kind: subjectKind, subject_id: subjectId,
+          message: context.slice(0, 3000),
+        });
+        setSent(true);
+      }}
+    >
+      🚩
+    </button>
+  );
+}
+
 export default function Ask() {
   const { user } = useAuth();
   const [question, setQuestion] = useState('');
@@ -72,9 +93,12 @@ export default function Ask() {
           <p className="muted">You asked: {turn.question}</p>
           <div className="row between" style={{ alignItems: 'flex-start' }}>
             <p style={{ fontSize: '1.05rem' }}>{turn.answer}</p>
-            <button className="quiet" onClick={() => speak(turn.answer, turn.language, { warm: true })} aria-label="Read aloud">
-              🔊
-            </button>
+            <span className="row" style={{ width: 'auto' }}>
+              <button className="quiet" onClick={() => speak(turn.answer, turn.language, { warm: true })} aria-label="Read aloud">
+                🔊
+              </button>
+              <ReportButton subjectKind="answer" context={`Q: ${turn.question}\nA: ${turn.answer}`} />
+            </span>
           </div>
           {turn.snippets?.length > 0 && (
             <details>

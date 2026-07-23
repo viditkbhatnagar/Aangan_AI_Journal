@@ -217,6 +217,20 @@ class ProductEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class Feedback(Base):
+    """Support messages and 'this looks wrong' reports — the correction loop."""
+
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    kind: Mapped[str] = mapped_column(String, default="feedback", nullable=False)  # feedback|report
+    subject_kind: Mapped[str | None] = mapped_column(String, nullable=True)  # answer|alert|fact|other
+    subject_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class PasswordReset(Base):
     """One-time reset token, minted by the admin CLI for the pilot."""
 

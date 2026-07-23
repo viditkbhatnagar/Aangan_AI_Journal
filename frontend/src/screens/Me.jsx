@@ -21,6 +21,33 @@ function MoodStrip({ series }) {
   );
 }
 
+function HelpForm() {
+  const [message, setMessage] = useState('');
+  const [reply, setReply] = useState(null);
+
+  async function send(e) {
+    e.preventDefault();
+    const res = await api.post('/feedback', { kind: 'feedback', message: message.trim() });
+    setReply(res.message);
+    setMessage('');
+  }
+
+  return (
+    <form className="stack" onSubmit={send}>
+      <textarea
+        rows={2}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Something confusing? Something you wish existed?"
+      />
+      <div className="row">
+        <button disabled={!message.trim()}>Send</button>
+        {reply && <span className="muted">{reply}</span>}
+      </div>
+    </form>
+  );
+}
+
 function PlusFakeDoor() {
   const [reply, setReply] = useState(null);
   if (reply) return <p className="muted">{reply}</p>;
@@ -171,6 +198,12 @@ export default function Me() {
             <button disabled={!triggerText.trim() || triggerAudience.length === 0}>Add</button>
           </div>
         </form>
+      </section>
+
+      <section className="card stack">
+        <h2>💌 Help & feedback</h2>
+        <p className="muted">A human reads every message — usually within a day or two.</p>
+        <HelpForm />
       </section>
 
       <section className="card stack">

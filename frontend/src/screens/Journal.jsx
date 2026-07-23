@@ -84,6 +84,43 @@ function SharePrompts({ capture, onDismiss, onShared }) {
   );
 }
 
+function FactCard({ entry, fact, onChanged }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(fact.content);
+
+  async function save() {
+    await api.patch(`/facts/${fact.id}`, { content: text.trim() });
+    setEditing(false);
+    onChanged();
+  }
+
+  async function remove() {
+    await api.del(`/facts/${fact.id}`);
+    onChanged();
+  }
+
+  return (
+    <div className="stack" style={{ background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
+      <div className="row between">
+        <span className="pill">{fact.type}</span>
+        <span className="row" style={{ width: 'auto' }}>
+          <button className="quiet" onClick={() => setEditing(!editing)} title="Correct this note">✏️</button>
+          <button className="quiet" onClick={remove} title="Remove this note">🗑</button>
+        </span>
+      </div>
+      {editing ? (
+        <div className="row">
+          <input className="grow" value={text} onChange={(e) => setText(e.target.value)} />
+          <button disabled={!text.trim()} onClick={save}>Save</button>
+        </div>
+      ) : (
+        <p>{fact.content}</p>
+      )}
+      <ShareControls entryId={entry.id} factId={fact.id} current={fact.visibility} onChanged={onChanged} />
+    </div>
+  );
+}
+
 function EntryCard({ entry, onChanged }) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -122,13 +159,7 @@ function EntryCard({ entry, onChanged }) {
           <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{entry.transcript}</p>
           <ShareControls entryId={entry.id} current={entry.visibility} onChanged={onChanged} />
           {entry.facts?.map((fact) => (
-            <div key={fact.id} className="stack" style={{ background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
-              <div className="row between">
-                <span className="pill">{fact.type}</span>
-              </div>
-              <p>{fact.content}</p>
-              <ShareControls entryId={entry.id} factId={fact.id} current={fact.visibility} onChanged={onChanged} />
-            </div>
+            <FactCard key={fact.id} entry={entry} fact={fact} onChanged={onChanged} />
           ))}
         </div>
       )}
