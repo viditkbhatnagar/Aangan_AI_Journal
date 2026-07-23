@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     jwt_expiry_hours: int = 24
     database_url: str = f"sqlite:///{BACKEND_DIR / 'aangan.db'}"
     chroma_path: str = str(BACKEND_DIR / "chroma_data")
+    # Hindi is a core market: the default embedder must understand both
+    # languages. Changing this requires scripts/reindex.py (vectors from
+    # different models are incompatible); see scripts/eval_embeddings.py.
+    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
 
     audio_dir: str = str(BACKEND_DIR / "data" / "audio")
     actions_dir: str = str(BACKEND_DIR / "data" / "actions")

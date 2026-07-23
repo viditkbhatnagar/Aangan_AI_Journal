@@ -57,10 +57,9 @@ def reset_stores():
     Base.metadata.create_all(engine)
     _stamp_current_revision()
     try:
-        collection = store.get_collection()
-        existing = collection.get()
-        if existing["ids"]:
-            collection.delete(ids=existing["ids"])
+        # full drop: a fresh collection gets the current model's stamp and
+        # dimension (deleting ids alone would keep both from the old model)
+        store.reset_collection()
     except Exception:
         pass
 

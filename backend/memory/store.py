@@ -22,22 +22,45 @@ def set_client(client):
     _collection = None
 
 
+class EmbeddingModelMismatch(RuntimeError):
+    """The persisted collection was built by a different embedding model."""
+
+
+def _ensure_client():
+    global _client
+    if _client is None:
+        import chromadb
+        from chromadb.config import Settings as ChromaSettings
+
+        from config import settings
+
+        _client = chromadb.PersistentClient(
+            path=settings.chroma_path,
+            settings=ChromaSettings(anonymized_telemetry=False),
+        )
+    return _client
+
+
 def get_collection():
     global _client, _collection
     if _collection is None:
-        if _client is None:
-            import chromadb
-            from chromadb.config import Settings as ChromaSettings
+        from config import settings
 
-            from config import settings
-
-            _client = chromadb.PersistentClient(
-                path=settings.chroma_path,
-                settings=ChromaSettings(anonymized_telemetry=False),
-            )
+        _ensure_client()
+        # Stamp the collection with the model that built it. Vectors from a
+        # different model are silently incompatible (same dim ≠ same space),
+        # so a mismatch must stop the app, not degrade retrieval.
         _collection = _client.get_or_create_collection(
-            COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
+            COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine", "embedding_model": settings.embedding_model},
         )
+        stamped = (_collection.metadata or {}).get("embedding_model")
+        if stamped is not None and stamped != settings.embedding_model:
+            raise EmbeddingModelMismatch(
+                f"chroma_data was built with '{stamped}' but EMBEDDING_MODEL is "
+                f"'{settings.embedding_model}'. Run scripts/reindex.py to rebuild "
+                "the vectors (or set EMBEDDING_MODEL back)."
+            )
     return _collection
 
 
@@ -69,6 +92,20 @@ def fact_metadata(fact: Fact, viewer_ids: list[int]) -> dict:
         "type": fact.type,
         "created_at": fact.created_at.isoformat(),
     }
+
+
+def reset_collection() -> None:
+    """Drop and recreate the collection (fresh model stamp, fresh dimension).
+    Used by seed.py and scripts/reindex.py — NOT a per-document delete.
+    Deliberately skips the mismatch guard: rebuilding IS the fix."""
+    global _collection
+    client = _ensure_client()
+    try:
+        client.delete_collection(COLLECTION_NAME)
+    except Exception:
+        pass
+    _collection = None
+    get_collection()
 
 
 def upsert_documents(ids: list[str], texts: list[str], metadatas: list[dict]) -> None:
