@@ -1,13 +1,31 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, clearToken, setToken, setUnauthorizedHandler } from './api';
+import { api, clearToken, setCircleId, setToken, setUnauthorizedHandler } from './api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [members, setMembers] = useState([]);
+  const [circles, setCircles] = useState([]);
+  const [activeCircleId, setActiveCircleId] = useState(null);
 
   const refreshMembers = useCallback(async () => {
+    try {
+      const list = await api.get('/circles');
+      setCircles(list);
+      setActiveCircleId((current) => {
+        const still = list.find((c) => c.id === current);
+        const next = still ? current : (list[0]?.id ?? null);
+        setCircleId(next);
+        return next;
+      });
+      setMembers(list.length ? await api.get('/circles/members') : []);
+    } catch { setCircles([]); setMembers([]); }
+  }, []);
+
+  const switchCircle = useCallback(async (id) => {
+    setCircleId(id);
+    setActiveCircleId(id);
     try { setMembers(await api.get('/circles/members')); }
     catch { setMembers([]); }
   }, []);
@@ -48,13 +66,19 @@ export function AuthProvider({ children }) {
     clearToken();
     setUser(null);
     setMembers([]);
+    setCircles([]);
+    setActiveCircleId(null);
   }, []);
 
-  useEffect(() => { setUnauthorizedHandler(() => { setUser(null); setMembers([]); }); }, []);
+  useEffect(() => { setUnauthorizedHandler(() => { setUser(null); setMembers([]); setCircles([]); }); }, []);
 
   const value = useMemo(
-    () => ({ user, members, login, verifyMfa, register, logout, refreshMembers }),
-    [user, members, login, verifyMfa, register, logout, refreshMembers],
+    () => ({
+      user, members, circles, activeCircleId, switchCircle,
+      login, verifyMfa, register, logout, refreshMembers,
+    }),
+    [user, members, circles, activeCircleId, switchCircle,
+     login, verifyMfa, register, logout, refreshMembers],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

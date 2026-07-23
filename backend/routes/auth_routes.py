@@ -231,7 +231,7 @@ def delete_my_account(user: User = Depends(get_current_user), db: Session = Depe
     import os
 
     from agents import librarian
-    from auth import get_user_circle_id
+    from auth import get_user_circle_ids
     from models import (
         Action,
         Alert,
@@ -250,7 +250,7 @@ def delete_my_account(user: User = Depends(get_current_user), db: Session = Depe
     from services.membership import detach_user_from_circle
 
     user_id = user.id
-    circle_id = get_user_circle_id(db, user)
+    circle_ids = get_user_circle_ids(db, user)
 
     entries = db.query(JournalEntry).filter(JournalEntry.author_id == user_id).all()
     for entry in entries:
@@ -277,7 +277,7 @@ def delete_my_account(user: User = Depends(get_current_user), db: Session = Depe
         db.query(model).filter(column == user_id).delete(synchronize_session=False)
     db.commit()
 
-    if circle_id is not None:
+    for circle_id in circle_ids:
         detach_user_from_circle(db, user_id, circle_id)
 
     db.delete(db.get(User, user_id))

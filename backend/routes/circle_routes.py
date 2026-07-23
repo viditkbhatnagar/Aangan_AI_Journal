@@ -3,10 +3,10 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from auth import get_current_user, get_user_circle_id, require_circle_id
+from auth import get_current_user, require_circle_id
 from db import get_db
 from models import FamilyCircle, Membership, Relationship, User
-from schemas import CircleCreateIn, CircleJoinIn, CircleOut, MemberOut
+from schemas import CircleCreateIn, CircleJoinIn, CircleOut, CircleSummaryOut, MemberOut
 
 router = APIRouter(tags=["circles"])
 
@@ -17,8 +17,6 @@ def create_circle(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if get_user_circle_id(db, user) is not None:
-        raise HTTPException(status_code=409, detail="You are already in a family circle.")
     circle = FamilyCircle(
         name=body.name.strip(),
         invite_code=secrets.token_urlsafe(6),
@@ -44,11 +42,46 @@ def join_circle(
     )
     if circle is None:
         raise HTTPException(status_code=404, detail="No circle found for that invite code.")
-    if get_user_circle_id(db, user) is not None:
-        raise HTTPException(status_code=409, detail="You are already in a family circle.")
+    already = (
+        db.query(Membership)
+        .filter(Membership.circle_id == circle.id, Membership.user_id == user.id)
+        .first()
+    )
+    if already is not None:
+        raise HTTPException(status_code=409, detail="You're already in this circle.")
     db.add(Membership(circle_id=circle.id, user_id=user.id, role="member"))
     db.commit()
     return circle
+
+
+@router.get("/circles", response_model=list[CircleSummaryOut])
+def my_circles(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Every circle the user belongs to — powers the switcher."""
+    from sqlalchemy import func
+
+    counts = dict(
+        db.query(Membership.circle_id, func.count(Membership.id))
+        .group_by(Membership.circle_id)
+        .all()
+    )
+    rows = (
+        db.query(FamilyCircle, Membership.role)
+        .join(Membership, Membership.circle_id == FamilyCircle.id)
+        .filter(Membership.user_id == user.id)
+        .order_by(Membership.joined_at.asc(), Membership.id.asc())
+        .all()
+    )
+    return [
+        CircleSummaryOut(
+            id=circle.id,
+            name=circle.name,
+            invite_code=circle.invite_code,
+            plan=circle.plan,
+            role=role,
+            member_count=counts.get(circle.id, 0),
+        )
+        for circle, role in rows
+    ]
 
 
 @router.get("/circles/mine", response_model=CircleOut)

@@ -3,7 +3,17 @@ nothing an author records is readable by anyone else until they share it."""
 import enum
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db import Base
@@ -58,6 +68,9 @@ class FamilyCircle(Base):
 
 class Membership(Base):
     __tablename__ = "memberships"
+    __table_args__ = (
+        UniqueConstraint("circle_id", "user_id", name="uq_memberships_circle_user"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     circle_id: Mapped[int] = mapped_column(ForeignKey("family_circles.id"), nullable=False)

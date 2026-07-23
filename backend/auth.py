@@ -89,9 +89,30 @@ def get_current_user(
     return user
 
 
+def get_user_circle_ids(db: Session, user: User) -> list[int]:
+    rows = (
+        db.query(Membership.circle_id)
+        .filter(Membership.user_id == user.id)
+        .order_by(Membership.joined_at.asc(), Membership.id.asc())
+        .all()
+    )
+    return [row[0] for row in rows]
+
+
 def get_user_circle_id(db: Session, user: User) -> int | None:
-    membership = db.query(Membership).filter(Membership.user_id == user.id).first()
-    return membership.circle_id if membership else None
+    """The ACTIVE circle: the validated X-Circle-Id header when present,
+    otherwise the user's oldest membership. A header naming a circle the
+    user doesn't belong to is refused — clients can't bill or read into
+    someone else's circle by spoofing the header."""
+    from services.circle_context import requested_circle_id
+
+    circle_ids = get_user_circle_ids(db, user)
+    requested = requested_circle_id.get()
+    if requested is not None:
+        if requested in circle_ids:
+            return requested
+        raise HTTPException(status_code=403, detail="That's not one of your circles.")
+    return circle_ids[0] if circle_ids else None
 
 
 def require_circle_id(db: Session, user: User) -> int:

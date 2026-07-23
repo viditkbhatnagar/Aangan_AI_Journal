@@ -19,7 +19,10 @@ from models import (
 
 
 def detach_user_from_circle(db: Session, user_id: int, circle_id: int) -> None:
-    # 1) share targets naming the departing user -> collect affected entries
+    # 1) share targets naming the departing user, IN THIS CIRCLE ONLY —
+    #    grants the user holds in their other circles must survive
+    from models import Fact
+
     targets = (
         db.query(ShareTarget)
         .filter(ShareTarget.user_id == user_id)
@@ -27,14 +30,15 @@ def detach_user_from_circle(db: Session, user_id: int, circle_id: int) -> None:
     )
     affected_entry_ids: set[int] = set()
     for target in targets:
+        entry = None
         if target.entry_id:
-            affected_entry_ids.add(target.entry_id)
+            entry = db.get(JournalEntry, target.entry_id)
         elif target.fact_id:
-            from models import Fact
-
             fact = db.get(Fact, target.fact_id)
-            if fact:
-                affected_entry_ids.add(fact.entry_id)
+            entry = db.get(JournalEntry, fact.entry_id) if fact else None
+        if entry is None or entry.circle_id != circle_id:
+            continue
+        affected_entry_ids.add(entry.id)
         db.delete(target)
 
     # 2) remove from rule/trigger audiences in this circle

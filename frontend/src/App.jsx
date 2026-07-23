@@ -25,7 +25,7 @@ const NAV = [
 ];
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, circles, activeCircleId, switchCircle } = useAuth();
   const location = useLocation();
   const [alertCount, setAlertCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -42,7 +42,7 @@ export default function App() {
     poll();
     const timer = setInterval(poll, 30000);
     return () => { alive = false; clearInterval(timer); };
-  }, [user, location.pathname]);
+  }, [user, location.pathname, activeCircleId]);
 
   if (!user) {
     return location.pathname === '/reset' ? <ResetPassword /> : <Welcome />;
@@ -53,6 +53,18 @@ export default function App() {
       <header className="row between" style={{ marginBottom: 'var(--space-3)' }}>
         <span className="brand">Aangan<span className="hindi">आँगन</span></span>
         <span className="row" style={{ width: 'auto' }}>
+          {circles.length > 1 && (
+            <select
+              aria-label="Active family circle"
+              value={activeCircleId ?? ''}
+              onChange={(e) => switchCircle(Number(e.target.value))}
+              style={{ width: 'auto', padding: '0.3rem 0.5rem' }}
+            >
+              {circles.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
           <button
             className="quiet"
             onClick={() => setPanelOpen(!panelOpen)}
@@ -65,7 +77,7 @@ export default function App() {
         </span>
       </header>
       <AgentPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
-      <Routes>
+      <Routes key={activeCircleId ?? 'none'}>
         <Route path="/" element={<Home />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/ask" element={<Ask />} />

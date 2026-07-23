@@ -78,6 +78,15 @@ class CircleOut(ORMModel):
     invite_code: str
 
 
+class CircleSummaryOut(BaseModel):
+    id: int
+    name: str
+    invite_code: str
+    plan: str
+    role: str
+    member_count: int
+
+
 class MemberOut(BaseModel):
     id: int
     name: str

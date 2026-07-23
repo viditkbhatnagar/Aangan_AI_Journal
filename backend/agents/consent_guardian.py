@@ -132,6 +132,17 @@ def set_visibility(
         raise NotYourContent("Only the author can change what is shared.")
     if visibility == Visibility.custom and not viewer_ids:
         raise ValueError("Choose at least one person to share with.")
+    if visibility == Visibility.custom:
+        from models import Membership
+
+        member_ids = {
+            m.user_id
+            for m in db.query(Membership)
+            .filter(Membership.circle_id == row.circle_id)
+            .all()
+        }
+        if any(v not in member_ids for v in viewer_ids):
+            raise ValueError("You can only share with members of this circle.")
 
     old_visibility = row.visibility.value if row.visibility else "private"
     row.visibility = visibility

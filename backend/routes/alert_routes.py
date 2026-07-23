@@ -50,6 +50,16 @@ def create_trigger(
     circle_id = require_circle_id(db, user)
     if body.severity_hint not in {"gentle", "notable", "urgent"}:
         raise HTTPException(status_code=422, detail="severity_hint must be gentle, notable, or urgent")
+    from models import Membership
+
+    member_ids = {
+        m.user_id
+        for m in db.query(Membership).filter(Membership.circle_id == circle_id).all()
+    }
+    if any(a not in member_ids for a in body.audience):
+        raise HTTPException(
+            status_code=422, detail="Alert audience must be members of this circle."
+        )
     trigger = AlertTrigger(
         author_id=user.id,
         circle_id=circle_id,

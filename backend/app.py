@@ -59,6 +59,23 @@ def startup():
 
 
 @app.middleware("http")
+async def circle_context_middleware(request, call_next):
+    """Stash the X-Circle-Id header; auth.get_user_circle_id validates it
+    against a real membership before any route honors it."""
+    from services import circle_context
+
+    raw = request.headers.get("x-circle-id")
+    token = None
+    if raw and raw.isdigit():
+        token = circle_context.requested_circle_id.set(int(raw))
+    try:
+        return await call_next(request)
+    finally:
+        if token is not None:
+            circle_context.requested_circle_id.reset(token)
+
+
+@app.middleware("http")
 async def rate_limit(request, call_next):
     from fastapi.responses import JSONResponse
 

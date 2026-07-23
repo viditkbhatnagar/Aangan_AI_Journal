@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_user_circle_id
 from memory import store
-from models import Fact, JournalEntry, ShareTarget, User, Visibility
+from models import Fact, JournalEntry, Membership, ShareTarget, User, Visibility
 
 OVERFETCH = 4  # over-fetch factor: post-filter attrition still yields k snippets
 STOPWORDS = {
@@ -52,8 +52,14 @@ def is_visible(db: Session, asker: User, *, entry_id: int | None = None, fact_id
         return False  # deleted since indexing — never return it
     if row.author_id == asker.id:
         return True
-    asker_circle = get_user_circle_id(db, asker)
-    if asker_circle is None or row.circle_id != asker_circle:
+    # multi-circle: the asker must actually belong to the ROW's circle —
+    # never "whichever circle the asker happens to resolve to right now"
+    is_member = (
+        db.query(Membership.id)
+        .filter(Membership.user_id == asker.id, Membership.circle_id == row.circle_id)
+        .first()
+    )
+    if is_member is None:
         return False
     if row.visibility == Visibility.circle:
         return True

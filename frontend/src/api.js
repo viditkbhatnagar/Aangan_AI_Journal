@@ -2,10 +2,12 @@
 // localStorage/sessionStorage) — a page refresh means logging in again,
 // which is the private-by-default trade we want.
 let token = null;
+let circleId = null; // active family circle — sent as X-Circle-Id
 let onUnauthorized = () => {};
 
 export function setToken(t) { token = t; }
-export function clearToken() { token = null; }
+export function clearToken() { token = null; circleId = null; }
+export function setCircleId(id) { circleId = id; }
 export function setUnauthorizedHandler(fn) { onUnauthorized = fn; }
 
 export class ApiError extends Error {
@@ -18,6 +20,7 @@ export class ApiError extends Error {
 async function request(path, { method = 'GET', body, formData } = {}) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (circleId != null) headers['X-Circle-Id'] = String(circleId);
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   const res = await fetch(`/api${path}`, {

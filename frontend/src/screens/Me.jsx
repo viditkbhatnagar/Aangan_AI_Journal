@@ -88,6 +88,51 @@ function HelpForm() {
   );
 }
 
+function AnotherCircle() {
+  const { refreshMembers } = useAuth();
+  const [choice, setChoice] = useState('join'); // join | create
+  const [value, setValue] = useState('');
+  const [notice, setNotice] = useState(null);
+  const [error, setError] = useState(null);
+
+  async function submit(e) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const circle = choice === 'join'
+        ? await api.post('/circles/join', { invite_code: value.trim() })
+        : await api.post('/circles', { name: value.trim() });
+      await refreshMembers();
+      setNotice(`You're in "${circle.name}" — switch circles from the top bar.`);
+      setValue('');
+    } catch (err) { setError(err.message); }
+  }
+
+  return (
+    <form className="stack" onSubmit={submit}>
+      <div className="row">
+        <button type="button" className={choice === 'join' ? '' : 'ghost'} onClick={() => setChoice('join')}>
+          Join with code
+        </button>
+        <button type="button" className={choice === 'create' ? '' : 'ghost'} onClick={() => setChoice('create')}>
+          Start a new one
+        </button>
+      </div>
+      <div className="row">
+        <input
+          placeholder={choice === 'join' ? 'Invite code' : 'Circle name, e.g. Sasural'}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          required
+        />
+        <button disabled={!value.trim()}>{choice === 'join' ? 'Join' : 'Create'}</button>
+      </div>
+      {notice && <p className="muted" role="status">{notice}</p>}
+      {error && <p className="error-text" role="alert">{error}</p>}
+    </form>
+  );
+}
+
 function PlusFakeDoor() {
   const [reply, setReply] = useState(null);
   if (reply) return <p className="muted">{reply}</p>;
@@ -256,6 +301,16 @@ export default function Me() {
       </section>
 
       <MfaCard user={user} />
+
+      <section className="card stack">
+        <h2>🏘️ Another circle</h2>
+        <p className="muted">
+          Family comes in many shapes — join or start a second circle, and
+          switch between them from the top bar. Each circle only ever sees
+          what you share with it.
+        </p>
+        <AnotherCircle />
+      </section>
 
       <section className="card stack">
         <h2>⚙️ Settings</h2>
