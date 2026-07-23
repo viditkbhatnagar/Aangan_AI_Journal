@@ -51,6 +51,50 @@ def join_circle(
     return circle
 
 
+@router.get("/circles/mine", response_model=CircleOut)
+def my_circle(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    circle_id = require_circle_id(db, user)
+    return db.get(FamilyCircle, circle_id)
+
+
+@router.post("/circles/leave")
+def leave_circle(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from services.membership import detach_user_from_circle
+
+    circle_id = require_circle_id(db, user)
+    detach_user_from_circle(db, user.id, circle_id)
+    return {"ok": True}
+
+
+@router.post("/circles/members/{member_id}/remove")
+def remove_member(
+    member_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from services.membership import detach_user_from_circle
+
+    circle_id = require_circle_id(db, user)
+    me = (
+        db.query(Membership)
+        .filter(Membership.circle_id == circle_id, Membership.user_id == user.id)
+        .first()
+    )
+    if me is None or me.role != "admin":
+        raise HTTPException(status_code=403, detail="Only the circle admin can remove a member.")
+    if member_id == user.id:
+        raise HTTPException(status_code=422, detail="Use leave to remove yourself.")
+    target = (
+        db.query(Membership)
+        .filter(Membership.circle_id == circle_id, Membership.user_id == member_id)
+        .first()
+    )
+    if target is None:
+        raise HTTPException(status_code=404, detail="No such member in your circle.")
+    detach_user_from_circle(db, member_id, circle_id)
+    return {"ok": True}
+
+
 @router.get("/circles/members", response_model=list[MemberOut])
 def members(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     circle_id = require_circle_id(db, user)

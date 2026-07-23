@@ -3,6 +3,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { api } from './api';
 import { useAuth } from './auth';
 import Welcome from './screens/Welcome';
+import ResetPassword from './screens/ResetPassword';
 import Home from './screens/Home';
 import Journal from './screens/Journal';
 import Ask from './screens/Ask';
@@ -42,7 +43,9 @@ export default function App() {
     return () => { alive = false; clearInterval(timer); };
   }, [user, location.pathname]);
 
-  if (!user) return <Welcome />;
+  if (!user) {
+    return location.pathname === '/reset' ? <ResetPassword /> : <Welcome />;
+  }
 
   return (
     <div className="app-shell">

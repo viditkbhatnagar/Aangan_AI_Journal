@@ -6,11 +6,22 @@ import { useAuth } from '../auth';
 export default function Home() {
   const { user, members } = useAuth();
   const [nudges, setNudges] = useState([]);
+  const [circle, setCircle] = useState(null);
+  const [copied, setCopied] = useState(false);
   const others = members.filter((m) => m.id !== user.id);
 
   useEffect(() => {
     api.get('/nudges').then(setNudges).catch(() => setNudges([]));
+    api.get('/circles/mine').then(setCircle).catch(() => setCircle(null));
   }, []);
+
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(circle.invite_code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  }
 
   return (
     <div className="stack-lg">
@@ -41,10 +52,17 @@ export default function Home() {
       )}
 
       <section className="card">
-        <h2>Your circle</h2>
+        <div className="row between">
+          <h2>Your circle{circle ? ` — ${circle.name}` : ''}</h2>
+          {circle && (
+            <button className="quiet" onClick={copyInvite} title="Copy the invite code for family to join">
+              {copied ? 'Copied ✓' : `Invite: ${circle.invite_code} ⧉`}
+            </button>
+          )}
+        </div>
         {others.length === 0 ? (
           <p className="muted" style={{ marginTop: 'var(--space-2)' }}>
-            No one else here yet — share your invite code so family can join.
+            No one else here yet — copy the invite code above and send it to family.
           </p>
         ) : (
           <ul style={{ listStyle: 'none', marginTop: 'var(--space-2)' }} className="stack">

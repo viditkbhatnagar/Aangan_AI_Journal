@@ -44,6 +44,29 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     return TokenOut(access_token=create_token(user))
 
 
+@router.post("/auth/reset", response_model=TokenOut)
+def reset_password(body: dict, db: Session = Depends(get_db)):
+    """Consume a one-time reset token (minted via backend/scripts/reset_link.py)."""
+    from datetime import datetime
+
+    from models import PasswordReset
+
+    token = (body.get("token") or "").strip()
+    new_password = body.get("new_password") or ""
+    if len(new_password) < 8:
+        raise HTTPException(status_code=422, detail="Pick a password of at least 8 characters.")
+    reset = db.query(PasswordReset).filter(PasswordReset.token == token).first()
+    if reset is None or reset.used or reset.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="That reset link isn't valid any more.")
+    user = db.get(User, reset.user_id)
+    if user is None:
+        raise HTTPException(status_code=400, detail="That reset link isn't valid any more.")
+    user.password_hash = hash_password(new_password)
+    reset.used = True
+    db.commit()
+    return TokenOut(access_token=create_token(user))
+
+
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
     return user
