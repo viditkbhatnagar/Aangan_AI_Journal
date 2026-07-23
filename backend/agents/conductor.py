@@ -32,7 +32,7 @@ def relationship_labels(db: Session, user: User) -> dict[int, str]:
 def handle_ask(db: Session, user: User, question: str) -> AskResult:
     from services import activity, metering
 
-    with metering.context(user_id=user.id):
+    with metering.context(user_id=user.id, db=db):
         return _handle_ask_metered(db, user, question, activity)
 
 

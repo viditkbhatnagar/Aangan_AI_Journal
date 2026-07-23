@@ -29,7 +29,7 @@ def run_capture(
     transcript: str | None = None,
     language: str | None = None,
 ) -> CaptureResult:
-    with metering.context(user_id=author.id):
+    with metering.context(user_id=author.id, db=db):
         return _run_capture_metered(
             db, author, circle_id,
             audio_path=audio_path, transcript=transcript, language=language,
