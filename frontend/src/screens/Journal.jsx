@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import HoldToTalk from '../components/HoldToTalk';
 import ShareControls from '../components/ShareControls';
+import UpgradeCard from '../components/UpgradeCard';
 
 // When an entry clearly asks for something to be DONE ("order chocolates —
 // you do it"), the Doer drafts it. Nothing runs until the author approves.
@@ -142,6 +143,7 @@ export default function Journal() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [capMessage, setCapMessage] = useState(null);
 
   const refresh = useCallback(async () => setEntries(await api.get('/entries')), []);
   useEffect(() => { refresh(); }, [refresh]);
@@ -156,7 +158,10 @@ export default function Journal() {
       setTyping(false);
       await refresh();
     } catch (err) {
-      if (err.status === 503) {
+      if (err.status === 402) {
+        setCapMessage(err.message);
+        setTyping(true); // typed entries stay free
+      } else if (err.status === 503) {
         setNotice(err.message);
         setTyping(true);
       } else {
@@ -213,6 +218,8 @@ export default function Journal() {
           <button disabled={busy || !text.trim()}>Keep this</button>
         </form>
       )}
+
+      {capMessage && <UpgradeCard message={capMessage} onDismiss={() => setCapMessage(null)} />}
 
       {capture?.suggested_action && (
         <ActionPrompt

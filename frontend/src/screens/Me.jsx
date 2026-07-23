@@ -21,6 +21,16 @@ function MoodStrip({ series }) {
   );
 }
 
+function PlusFakeDoor() {
+  const [reply, setReply] = useState(null);
+  if (reply) return <p className="muted">{reply}</p>;
+  return (
+    <button onClick={async () => setReply((await api.post('/plus/interest')).message)}>
+      Aangan Plus — notify me
+    </button>
+  );
+}
+
 export default function Me() {
   const { user, members, logout } = useAuth();
   const others = members.filter((m) => m.id !== user.id);
@@ -161,6 +171,15 @@ export default function Me() {
             <button disabled={!triggerText.trim() || triggerAudience.length === 0}>Add</button>
           </div>
         </form>
+      </section>
+
+      <section className="card stack">
+        <h2>✨ Aangan Plus</h2>
+        <p className="muted">
+          Unlimited voice minutes and Companion questions, the full memory book,
+          and first access to new features — one plan for the whole family.
+        </p>
+        <PlusFakeDoor />
       </section>
 
       <section className="card stack">

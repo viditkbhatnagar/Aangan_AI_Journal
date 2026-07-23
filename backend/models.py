@@ -46,6 +46,7 @@ class FamilyCircle(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     invite_code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    plan: Mapped[str] = mapped_column(String, default="free", nullable=False)  # free|plus
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

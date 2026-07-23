@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import HoldToTalk from '../components/HoldToTalk';
+import UpgradeCard from '../components/UpgradeCard';
 import { speak, stopSpeaking } from '../voice';
 
 export default function Ask() {
@@ -10,6 +11,7 @@ export default function Ask() {
   const [thread, setThread] = useState([]); // {question, answer, snippets}
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [capMessage, setCapMessage] = useState(null);
 
   async function askWith(payload, label) {
     setBusy(true);
@@ -22,7 +24,8 @@ export default function Ask() {
       speak(result.answer, result.language, { warm: true });
       setQuestion('');
     } catch (err) {
-      setError(err.message);
+      if (err.status === 402) setCapMessage(err.message);
+      else setError(err.message);
     } finally {
       setBusy(false);
     }
@@ -61,6 +64,7 @@ export default function Ask() {
       </form>
 
       <HoldToTalk onRecorded={onRecorded} disabled={busy} />
+      {capMessage && <UpgradeCard message={capMessage} onDismiss={() => setCapMessage(null)} />}
       {error && <p className="error-text" role="alert">{error}</p>}
 
       {thread.map((turn, i) => (

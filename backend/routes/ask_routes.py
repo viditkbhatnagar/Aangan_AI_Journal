@@ -54,15 +54,21 @@ async def ask(
     if not question or not question.strip():
         raise HTTPException(status_code=422, detail="Ask me something first. 🙂")
 
-    result = conductor.handle_ask(db, user, question.strip())
-
-    # metering: the countable freemium unit + funnel event
+    # freemium cap: asks are the countable unit
+    import entitlements
     from auth import get_user_circle_id
-    from models import AskRecord
+    from models import AskRecord, FamilyCircle
     from services import metering
     from services.events import record_event
 
     circle_id = get_user_circle_id(db, user)
+    if circle_id is not None:
+        try:
+            entitlements.check_ask_allowed(db, db.get(FamilyCircle, circle_id))
+        except entitlements.CapExceeded as exc:
+            raise HTTPException(status_code=402, detail=str(exc))
+
+    result = conductor.handle_ask(db, user, question.strip())
     if circle_id is not None:
         db.add(AskRecord(
             user_id=user.id,

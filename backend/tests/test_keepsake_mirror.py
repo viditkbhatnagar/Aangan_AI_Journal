@@ -38,15 +38,20 @@ def test_keepsake_respects_custom_shares(client, db, family):
     assert not any("just for Aditya" in m["text"] for m in abhishek["moments"])
 
 
-def test_on_this_day_resurfaces_older_years(client, db, family):
+def test_on_this_day_resurfaces_older_years_on_plus(client, db, family):
     make_entry(
         db, family.mumma, family.circle, "Diwali prep with everyone home.",
         visibility=Visibility.circle,
         created_at=datetime(2024, 7, 20, 18, 0, 0),
     )
+    # free plan keeps a 90-day window — the 2024 moment is beyond it
+    free_book = client.get("/keepsake", headers=auth_headers(family.aditya)).json()
+    assert not any("Diwali" in m["text"] for m in free_book["moments"])
+
+    # the full family history is a Plus feature
+    family.circle.plan = "plus"
+    db.commit()
     body = client.get("/keepsake", headers=auth_headers(family.aditya)).json()
-    # 'on this day' depends on today's date matching; assert the shape and that
-    # the shared moment is at least in the book
     assert any("Diwali" in m["text"] for m in body["moments"])
     assert isinstance(body["on_this_day"], list)
 

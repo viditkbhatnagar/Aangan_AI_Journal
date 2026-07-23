@@ -33,6 +33,14 @@ async def create_entry(
 
     audio_path = None
     if audio is not None:
+        # freemium cap on costly voice minutes (typed entries are always free)
+        import entitlements
+        from models import FamilyCircle
+
+        try:
+            entitlements.check_voice_allowed(db, db.get(FamilyCircle, circle_id))
+        except entitlements.CapExceeded as exc:
+            raise HTTPException(status_code=402, detail=str(exc))
         ext = AUDIO_EXTENSIONS.get((audio.content_type or "").split(";")[0], "webm")
         os.makedirs(settings.audio_dir, exist_ok=True)
         audio_path = os.path.join(settings.audio_dir, f"{user.id}-{int(time.time() * 1000)}.{ext}")

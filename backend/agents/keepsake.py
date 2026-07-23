@@ -1,13 +1,14 @@
 """Keepsake: curates SHARED moments into a memory book, with 'on this day'
 resurfacing. Never private content — visibility-checked row by row."""
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+import entitlements
 from agents import librarian
 from auth import get_user_circle_id
-from models import JournalEntry, User, Visibility
+from models import FamilyCircle, JournalEntry, User, Visibility
 
 
 @dataclass
@@ -26,16 +27,18 @@ class KeepsakeView:
 
 
 def _visible_shared_entries(db: Session, user: User, circle_id: int) -> list[JournalEntry]:
-    candidates = (
-        db.query(JournalEntry)
-        .filter(
-            JournalEntry.circle_id == circle_id,
-            JournalEntry.visibility != Visibility.private,  # shared only, ever
-        )
-        .order_by(JournalEntry.created_at.desc())
-        .limit(200)
-        .all()
+    query = db.query(JournalEntry).filter(
+        JournalEntry.circle_id == circle_id,
+        JournalEntry.visibility != Visibility.private,  # shared only, ever
     )
+    # plan window: the free tier keeps the recent book; Plus keeps it all
+    circle = db.get(FamilyCircle, circle_id)
+    memory_days = entitlements.caps_for(circle.plan if circle else "free")["memory_days"]
+    if memory_days is not None:
+        query = query.filter(
+            JournalEntry.created_at >= datetime.utcnow() - timedelta(days=memory_days)
+        )
+    candidates = query.order_by(JournalEntry.created_at.desc()).limit(200).all()
     return [e for e in candidates if librarian.is_visible(db, user, entry_id=e.id)]
 
 

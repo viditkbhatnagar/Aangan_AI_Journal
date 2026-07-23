@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react';
 import { startRecording } from '../voice';
 
+const MAX_RECORDING_MS = 5 * 60 * 1000; // soft cost cap; Plus can raise it later
+
 // Big hold-to-talk button. Hold to record; release to send the blob up.
 export default function HoldToTalk({ onRecorded, disabled }) {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState(null);
   const sessionRef = useRef(null);
+  const timerRef = useRef(null);
 
   async function begin(e) {
     e.preventDefault();
@@ -14,6 +17,10 @@ export default function HoldToTalk({ onRecorded, disabled }) {
     try {
       sessionRef.current = await startRecording();
       setRecording(true);
+      timerRef.current = setTimeout(() => {
+        setError('That was a lovely long one — I kept the first five minutes.');
+        end();
+      }, MAX_RECORDING_MS);
     } catch {
       setError("I couldn't reach your microphone — you can type instead.");
     }
@@ -21,6 +28,7 @@ export default function HoldToTalk({ onRecorded, disabled }) {
 
   async function end() {
     if (!sessionRef.current) return;
+    clearTimeout(timerRef.current);
     const session = sessionRef.current;
     sessionRef.current = null;
     setRecording(false);

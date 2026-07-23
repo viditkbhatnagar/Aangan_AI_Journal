@@ -16,6 +16,7 @@ from routes import (
     keepsake_routes,
     legal_routes,
     nudge_routes,
+    plus_routes,
     rule_routes,
 )
 
@@ -67,6 +68,7 @@ app.include_router(nudge_routes.router)
 app.include_router(keepsake_routes.router)
 app.include_router(activity_routes.router)
 app.include_router(legal_routes.router)
+app.include_router(plus_routes.router)
 
 
 @app.get("/health")
