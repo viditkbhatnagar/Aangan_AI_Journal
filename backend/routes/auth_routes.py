@@ -26,6 +26,10 @@ from schemas import (
 
 router = APIRouter(tags=["auth"])
 
+# Two-factor code attempts allowed per ACCOUNT per window (see mfa_verify).
+MFA_ATTEMPTS_PER_WINDOW = 5
+MFA_ATTEMPT_WINDOW_SEC = 300
+
 
 @router.post("/auth/register", response_model=TokenOut)
 def register(body: RegisterIn, db: Session = Depends(get_db)):
@@ -80,10 +84,23 @@ def mfa_verify(body: MfaVerifyIn, db: Session = Depends(get_db)):
 
     from services import audit
 
+    from services import ratelimit
+
     user_id = decode_mfa_challenge_token(body.mfa_token)
     user = db.get(User, user_id) if user_id is not None else None
     if user is None or not user.mfa_enabled or not user.totp_secret:
         raise HTTPException(status_code=403, detail="Please log in again to get a fresh code prompt.")
+    # PER-ACCOUNT throttle: the /auth/* middleware limit is per IP, so a
+    # distributed attacker holding the password could otherwise brute-force
+    # a 6-digit code. Keyed by user, so extra IPs buy nothing.
+    if not ratelimit.allow(
+        f"user:{user.id}", "mfa", MFA_ATTEMPTS_PER_WINDOW, MFA_ATTEMPT_WINDOW_SEC
+    ):
+        audit.record(user.id, "mfa_throttled", "user", user.id)
+        raise HTTPException(
+            status_code=429,
+            detail="Too many code attempts. Wait a few minutes, then log in again. 🌿",
+        )
     if not pyotp.TOTP(user.totp_secret).verify(body.code.strip(), valid_window=1):
         audit.record(user.id, "mfa_failed", "user", user.id)
         raise HTTPException(status_code=403, detail="That code didn't match — try the next one from your app.")
@@ -145,7 +162,7 @@ def mfa_disable(
     return {"ok": True, "message": "Two-factor is off."}
 
 
-@router.post("/auth/reset", response_model=TokenOut)
+@router.post("/auth/reset", response_model=LoginOut)
 def reset_password(body: dict, db: Session = Depends(get_db)):
     """Consume a one-time reset token (minted via backend/scripts/reset_link.py)."""
     from datetime import datetime
@@ -165,7 +182,10 @@ def reset_password(body: dict, db: Session = Depends(get_db)):
     user.password_hash = hash_password(new_password)
     reset.used = True
     db.commit()
-    return TokenOut(access_token=create_token(user))
+    # a reset must not be an MFA bypass: two-factor accounts still owe a code
+    if user.mfa_enabled and user.totp_secret:
+        return LoginOut(mfa_required=True, mfa_token=create_mfa_challenge_token(user))
+    return LoginOut(access_token=create_token(user))
 
 
 @router.get("/me", response_model=UserOut)

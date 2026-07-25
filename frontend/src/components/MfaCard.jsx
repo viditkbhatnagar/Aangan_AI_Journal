@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 
 /** Two-factor enrollment card for the Me screen.
  *  Flow: setup (QR + secret) → confirm a code → enabled. Disable needs a code. */
 export default function MfaCard({ user }) {
   const [enabled, setEnabled] = useState(Boolean(user?.mfa_enabled));
+
+  // the auth-context user is fetched once at login, so after enrolling and
+  // navigating away it still says mfa_enabled=false — read live state on mount
+  useEffect(() => {
+    let alive = true;
+    api.get('/me')
+      .then((me) => { if (alive) setEnabled(Boolean(me.mfa_enabled)); })
+      .catch(() => { /* keep whatever the context said */ });
+    return () => { alive = false; };
+  }, []);
   const [setup, setSetup] = useState(null); // {secret, otpauth_uri, qr_svg}
   const [code, setCode] = useState('');
   const [notice, setNotice] = useState(null);

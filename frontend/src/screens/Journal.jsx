@@ -186,26 +186,44 @@ export default function Journal() {
   // async capture: the save returns instantly with status 'enriching';
   // poll the enrichment endpoint until the background agents finish
   const pollTimer = useRef(null);
+  const pollingFor = useRef(null); // entry id this poll belongs to
   useEffect(() => () => clearInterval(pollTimer.current), []);
 
   function pollEnrichment(entryId) {
     clearInterval(pollTimer.current);
+    pollingFor.current = entryId;
     let attempts = 0;
-    pollTimer.current = setInterval(async () => {
+    let errors = 0;
+    const timer = setInterval(async () => {
+      // a newer capture took over — this tick must not touch its state
+      if (pollingFor.current !== entryId) {
+        clearInterval(timer);
+        return;
+      }
       attempts += 1;
       try {
         const enriched = await api.get(`/entries/${entryId}/enrichment`);
+        if (pollingFor.current !== entryId) return;
         if (enriched.entry.status === 'ready') {
-          clearInterval(pollTimer.current);
+          clearInterval(timer);
+          pollingFor.current = null;
           setCapture(enriched);
           await refresh();
         } else if (attempts > 40) {
-          clearInterval(pollTimer.current);
+          clearInterval(timer);
+          pollingFor.current = null;
+          setNotice('Still finishing your notes — reopen the entry in a moment to see them.');
         }
       } catch {
-        clearInterval(pollTimer.current);
+        errors += 1;
+        if (errors >= 3) {          // tolerate blips; give up only if persistent
+          clearInterval(timer);
+          pollingFor.current = null;
+          setNotice('Saved ✓ — the notes are still being made; refresh the journal shortly.');
+        }
       }
     }, 1500);
+    pollTimer.current = timer;
   }
 
   async function submit(formData) {

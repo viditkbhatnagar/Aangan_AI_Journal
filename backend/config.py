@@ -60,4 +60,20 @@ class Settings(BaseSettings):
     async_capture: bool = False
 
 
+def _anchor_sqlite_path(url: str) -> str:
+    """A relative sqlite URL (sqlite:///aangan.db, as .env.example shows)
+    resolves against the CWD, so uvicorn from backend/ and a script run from
+    the repo root would touch DIFFERENT database files. Anchor relative paths
+    to backend/ so every entry point agrees. Absolute URLs (sqlite:////...,
+    docker) and in-memory URLs (sqlite://) are left untouched."""
+    prefix = "sqlite:///"
+    if not url.startswith(prefix):
+        return url
+    path = url[len(prefix) :]
+    if not path or path.startswith("/") or path == ":memory:":
+        return url
+    return prefix + str(BACKEND_DIR / path)
+
+
 settings = Settings()
+settings.database_url = _anchor_sqlite_path(settings.database_url)

@@ -44,6 +44,15 @@ def test_upgrade_head_matches_models(tmp_path, monkeypatch):
     engine.dispose()
 
 
+def _run_migrate(db_url, monkeypatch):
+    from config import settings
+
+    monkeypatch.setattr(settings, "database_url", db_url)
+    import importlib
+
+    importlib.import_module("scripts.migrate").main()
+
+
 def test_migrate_script_stamps_pre_alembic_db(tmp_path, monkeypatch):
     """A DB built by create_all (no alembic_version) gets stamped, not re-built."""
     db_url = f"sqlite:///{tmp_path}/legacy.db"
@@ -51,15 +60,50 @@ def test_migrate_script_stamps_pre_alembic_db(tmp_path, monkeypatch):
     Base.metadata.create_all(engine)
     engine.dispose()
 
-    from config import settings
-
-    monkeypatch.setattr(settings, "database_url", db_url)
-    import importlib
-
-    migrate = importlib.import_module("scripts.migrate")
-    migrate.main()
+    _run_migrate(db_url, monkeypatch)
 
     engine = create_engine(db_url)
-    tables = set(inspect(engine).get_table_names())
-    assert "alembic_version" in tables
+    assert "alembic_version" in set(inspect(engine).get_table_names())
     engine.dispose()
+
+
+def test_pre_alembic_db_from_an_older_release_gets_its_migrations(tmp_path, monkeypatch):
+    """Regression: stamping such a DB at head would skip every post-baseline
+    migration, and the app would then crash on the missing columns."""
+    db_url = f"sqlite:///{tmp_path}/older_release.db"
+    from config import settings
+
+    # the previous release's schema IS the baseline revision; dropping
+    # alembic_version leaves exactly what its create_all produced
+    monkeypatch.setattr(settings, "database_url", db_url)
+    command.upgrade(_alembic_config(), "26dfeebc78ce")
+    engine = create_engine(db_url)
+    with engine.begin() as conn:
+        conn.exec_driver_sql("DROP TABLE alembic_version")
+    inspector = inspect(engine)
+    assert "totp_secret" not in {c["name"] for c in inspector.get_columns("users")}
+    engine.dispose()
+
+    _run_migrate(db_url, monkeypatch)
+
+    engine = create_engine(db_url)
+    inspector = inspect(engine)
+    user_cols = {c["name"] for c in inspector.get_columns("users")}
+    entry_cols = {c["name"] for c in inspector.get_columns("journal_entries")}
+    assert {"totp_secret", "mfa_enabled"} <= user_cols
+    assert {"status", "applied_rules"} <= entry_cols
+    engine.dispose()
+
+
+def test_relative_sqlite_url_is_anchored_to_backend_dir():
+    """A relative URL must not resolve against the caller's CWD, or uvicorn
+    and the scripts would use different database files."""
+    from config import BACKEND_DIR, _anchor_sqlite_path
+
+    assert _anchor_sqlite_path("sqlite:///aangan.db") == f"sqlite:///{BACKEND_DIR / 'aangan.db'}"
+    # absolute and in-memory URLs are left alone
+    assert _anchor_sqlite_path("sqlite:////app/backend/dbdata/aangan.db") == (
+        "sqlite:////app/backend/dbdata/aangan.db"
+    )
+    assert _anchor_sqlite_path("sqlite://") == "sqlite://"
+    assert _anchor_sqlite_path("postgresql://host/db") == "postgresql://host/db"

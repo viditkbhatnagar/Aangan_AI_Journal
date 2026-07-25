@@ -84,6 +84,58 @@ def test_login_without_mfa_still_returns_full_session(client, db):
     assert login["access_token"]
 
 
+def test_code_guessing_is_throttled_per_account(client, db, monkeypatch):
+    """The /auth/* middleware limit is per IP; a distributed attacker holding
+    the password must still hit a per-ACCOUNT ceiling."""
+    from routes import auth_routes
+
+    monkeypatch.setattr(auth_routes, "MFA_ATTEMPTS_PER_WINDOW", 3)
+    user = _make_login_user(db)
+    _enroll(client, auth_headers(user))
+    mfa_token = client.post(
+        "/auth/login", json={"email": user.email, "password": "aangan123"}
+    ).json()["mfa_token"]
+
+    statuses = [
+        client.post(
+            "/auth/mfa/verify", json={"mfa_token": mfa_token, "code": "000000"}
+        ).status_code
+        for _ in range(4)
+    ]
+    assert statuses[:3] == [403, 403, 403]
+    assert statuses[3] == 429  # throttled by account, not by IP
+
+
+def test_password_reset_is_not_an_mfa_bypass(client, db):
+    import secrets
+    from datetime import datetime, timedelta
+
+    from models import PasswordReset
+
+    user = _make_login_user(db)
+    secret = _enroll(client, auth_headers(user))
+    token = secrets.token_urlsafe(24)
+    db.add(PasswordReset(
+        user_id=user.id, token=token,
+        expires_at=datetime.utcnow() + timedelta(hours=24),
+    ))
+    db.commit()
+
+    reset = client.post(
+        "/auth/reset", json={"token": token, "new_password": "brandnew123"}
+    ).json()
+    assert reset["mfa_required"] is True
+    assert reset["access_token"] is None  # no session without the second factor
+
+    verified = client.post(
+        "/auth/mfa/verify",
+        json={"mfa_token": reset["mfa_token"], "code": pyotp.TOTP(secret).now()},
+    )
+    assert verified.status_code == 200
+    session = verified.json()["access_token"]
+    assert client.get("/me", headers={"Authorization": f"Bearer {session}"}).status_code == 200
+
+
 def test_disable_requires_code_and_secret_never_leaks(client, db):
     user = _make_login_user(db)
     headers = auth_headers(user)

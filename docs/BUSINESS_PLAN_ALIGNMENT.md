@@ -69,7 +69,7 @@ Advantage claims the plan may make **because code enforces them**: privacy-by-ar
 - Explicitly rejected for the plan: advertising (poisons trust posture), selling data/insights (contradicts values; rubric flags it), transaction commissions on Doer purchases (conflict-of-interest with "suggest, never sell"; disclose if ever added).
 
 ### Sections 9–10 — AI/technology plan & prototype
-Largely already true — see Part B evidence table. The technology-plan section of the report can describe the real stack (FastAPI, SQLite→Postgres path, Chroma, local multilingual-MiniLM embeddings (en+hi), provider-chain LLM, Deepgram, JWT auth, Playwright doer, 136 tests incl. adversarial privacy tests) and the real architecture diagram. Prototype section: real screenshots exist (login, home, alerts, agents panel); user-journey friction points and ≥3-user testing remain to be executed (Part D).
+Largely already true — see Part B evidence table. The technology-plan section of the report can describe the real stack (FastAPI, SQLite→Postgres path, Chroma, local multilingual-MiniLM embeddings (en+hi), provider-chain LLM, Deepgram, JWT auth, Playwright doer, 140 tests incl. adversarial privacy tests) and the real architecture diagram. Prototype section: real screenshots exist (login, home, alerts, agents panel); user-journey friction points and ≥3-user testing remain to be executed (Part D).
 
 ### Section 11 — Marketing & customer acquisition
 - Positioning: "the private family courtyard" — anti-surveillance, anti-noise family tech.
@@ -219,7 +219,7 @@ multilingual embeddings · multi-circle · load test + Postgres path · commerce
 APIs.
 
 **Consistency fixes now:** ~~standardize the test count across docs~~ — done;
-all docs quote the current suite size (136).
+all docs quote the current suite size (140).
 
 ## Part D — Non-code evidence workstream
 
