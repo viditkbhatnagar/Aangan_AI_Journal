@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # isn't available to the account
     openai_model: str = "gpt-5.4-mini"
     deepgram_api_key: str | None = None
+    # Deepgram Aura neural voice for the Companion reading answers aloud.
+    # Warm, friendly default; any Aura/Aura-2 voice id works (env-overridable).
+    # Browse voices at https://developers.deepgram.com/docs/tts-models
+    deepgram_tts_model: str = "aura-2-helena-en"
     jwt_secret: str = "change-me"
     jwt_algorithm: str = "HS256"
     jwt_expiry_hours: int = 24

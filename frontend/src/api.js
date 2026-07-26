@@ -43,10 +43,31 @@ async function request(path, { method = 'GET', body, formData } = {}) {
   return res.json();
 }
 
+// POST that returns binary (e.g. TTS audio). Resolves to a Blob, or null when
+// the server sends 204 No Content (used to signal "fall back to browser voice").
+async function requestBlob(path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`/api${path}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    clearToken();
+    onUnauthorized();
+    throw new ApiError(401, 'Please log in again.');
+  }
+  if (res.status === 204) return null;
+  if (!res.ok) throw new ApiError(res.status, null);
+  return res.blob();
+}
+
 export const api = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: 'POST', body }),
   patch: (path, body) => request(path, { method: 'PATCH', body }),
   del: (path) => request(path, { method: 'DELETE' }),
   postForm: (path, formData) => request(path, { method: 'POST', formData }),
+  postBlob: (path, body) => requestBlob(path, body),
 };

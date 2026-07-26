@@ -41,6 +41,7 @@ from routes import (
     nudge_routes,
     plus_routes,
     rule_routes,
+    speak_routes,
 )
 
 app = FastAPI(title="Aangan", version="1.0")
@@ -111,6 +112,7 @@ app.include_router(legal_routes.router)
 app.include_router(plus_routes.router)
 app.include_router(fact_routes.router)
 app.include_router(feedback_routes.router)
+app.include_router(speak_routes.router)
 
 
 @app.get("/health")
