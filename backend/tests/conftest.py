@@ -63,6 +63,8 @@ def keyless_mode(monkeypatch):
     # deterministic sync pipeline regardless of ASYNC_CAPTURE in .env;
     # async-path tests opt back in with their own monkeypatch
     monkeypatch.setattr(app_settings, "async_capture", False)
+    # never drive a real browser in tests — the Doer takes its offline path
+    monkeypatch.setattr(app_settings, "doer_live_search", False)
     llm.reset_for_tests()
     activity._feeds.clear()
     ratelimit.reset()

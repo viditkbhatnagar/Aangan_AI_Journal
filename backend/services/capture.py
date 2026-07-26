@@ -212,8 +212,14 @@ def _suggest_action(
     from services import actions as actions_service
 
     action = actions_service.create_action(db, author, intent, source_entry_id=entry_id)
-    activity.emit(
-        author.id, "Doer",
-        f"Prepared “{intent[:60]}” — waiting for YOUR approval on the Actions page.",
-    )
+    if action.status == "clarifying":
+        activity.emit(
+            author.id, "Doer",
+            f"Noted “{intent[:60]}” — I have a couple of quick questions on the Actions page before I buy.",
+        )
+    else:
+        activity.emit(
+            author.id, "Doer",
+            f"Prepared “{intent[:60]}” — waiting for YOUR approval on the Actions page.",
+        )
     return action

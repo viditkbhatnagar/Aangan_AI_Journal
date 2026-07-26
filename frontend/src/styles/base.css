@@ -228,6 +228,117 @@ label { display: block; font-size: 0.85rem; color: var(--color-text-soft); margi
   animation: rise var(--duration-normal) var(--ease-out-expo) backwards;
 }
 .agent-event-icon { font-size: 1.05rem; line-height: 1.4; }
+
+/* "Behind the scenes" step trace under an action card */
+.trace { margin-top: var(--space-2); border-top: 1px dashed var(--color-line); padding-top: var(--space-2); }
+.trace-summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-teal);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  user-select: none;
+}
+.trace-summary::-webkit-details-marker { display: none; }
+.trace-summary::before { content: '▸'; transition: transform var(--duration-normal) var(--ease-out-expo); }
+.trace[open] .trace-summary::before { transform: rotate(90deg); }
+.trace-count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  background: rgba(31, 78, 74, 0.1);
+  color: var(--color-teal);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
+.trace-list {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding-left: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.trace-step {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.45rem 0;
+  position: relative;
+  padding-left: 1.6rem;
+}
+/* the connecting line of the timeline */
+.trace-step::before {
+  content: '';
+  position: absolute;
+  left: 0.62rem;
+  top: 1.6rem;
+  bottom: -0.2rem;
+  width: 1.5px;
+  background: var(--color-line);
+}
+.trace-step:last-child::before { display: none; }
+.trace-icon {
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  font-size: 0.95rem;
+  width: 1.3rem;
+  text-align: center;
+  background: var(--color-surface);
+  z-index: 1;
+}
+.trace-body { font-size: 0.85rem; }
+.trace-body strong { font-weight: 600; }
+.trace-detail { font-size: 0.8rem; margin-top: 0.1rem; }
+
+/* Clarifying chat with the Doer */
+.chat { display: flex; flex-direction: column; gap: 0.4rem; }
+.chat-bubble {
+  max-width: 85%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  animation: rise var(--duration-normal) var(--ease-out-expo) backwards;
+}
+.chat-agent {
+  align-self: flex-start;
+  background: rgba(31, 78, 74, 0.08);
+  color: var(--color-text);
+  border-bottom-left-radius: 4px;
+}
+.chat-user {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-thinking { opacity: 0.75; font-style: italic; }
+
+/* Recommended product before approval */
+.stack-sm { display: flex; flex-direction: column; gap: 0.35rem; }
+.product-card {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+}
+.product-img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  flex-shrink: 0;
+}
+.product-title { font-size: 0.92rem; line-height: 1.3; }
+.product-reason { font-size: 0.8rem; }
+.product-link { font-size: 0.8rem; }
 @media (min-width: 1280px) {
   /* dock beside the app instead of overlaying it */
   .agent-panel { box-shadow: none; }

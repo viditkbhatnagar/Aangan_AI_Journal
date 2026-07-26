@@ -7,54 +7,6 @@ import HoldToTalk from '../components/HoldToTalk';
 import ShareControls from '../components/ShareControls';
 import UpgradeCard from '../components/UpgradeCard';
 
-// When an entry clearly asks for something to be DONE ("order chocolates —
-// you do it"), the Doer drafts it. Nothing runs until the author approves.
-function ActionPrompt({ action, onDone }) {
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState(null);
-  if (!action) return null;
-
-  async function approve() {
-    setBusy(true);
-    try {
-      const approved = await api.post(`/actions/${action.id}/approve`);
-      setResult(approved.result);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (result) {
-    const url = result.checkout_url || result.url || result.deep_link;
-    return (
-      <section className="card stack" style={{ borderColor: 'var(--color-accent)' }}>
-        <p>🎁 {result.note}</p>
-        {url && (
-          <a className="btn" href={url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', textAlign: 'center' }}>
-            Open it
-          </a>
-        )}
-        <button className="quiet" onClick={onDone}>Done</button>
-      </section>
-    );
-  }
-
-  return (
-    <section className="card stack" style={{ borderColor: 'var(--color-accent)' }}>
-      <p>🎁 I heard something to do: <strong>“{action.intent}”</strong></p>
-      <p className="muted">I've prepared it — nothing happens until you say yes. You'll finish any payment yourself.</p>
-      <div className="row">
-        <button disabled={busy} onClick={approve}>{busy ? 'Preparing…' : 'Yes, go ahead'}</button>
-        <button className="ghost" disabled={busy} onClick={() => navigate('/actions')}>Review first</button>
-        <button className="quiet" disabled={busy} onClick={async () => { await api.post(`/actions/${action.id}/cancel`); onDone(); }}>
-          No, leave it
-        </button>
-      </div>
-    </section>
-  );
-}
-
 function SharePrompts({ capture, onDismiss, onShared }) {
   if (!capture?.share_suggestions?.length && !capture?.applied_rules?.length) return null;
   return (
@@ -172,6 +124,7 @@ function EntryCard({ entry, onChanged }) {
 export default function Journal() {
   const { user } = useAuth();
   const lang = user.language;
+  const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [capture, setCapture] = useState(null);
   const [typing, setTyping] = useState(false);
@@ -182,6 +135,15 @@ export default function Journal() {
 
   const refresh = useCallback(async () => setEntries(await api.get('/entries')), []);
   useEffect(() => { refresh(); }, [refresh]);
+
+  // A spoken/typed command ("order flowers") becomes an action — hop straight
+  // into the Actions chat where the Doer is waiting with its first question.
+  useEffect(() => {
+    const act = capture?.suggested_action;
+    if (!act) return;
+    setCapture((c) => (c ? { ...c, suggested_action: null } : c));
+    navigate('/actions', { state: { focusActionId: act.id } });
+  }, [capture?.suggested_action, navigate]);
 
   // async capture: the save returns instantly with status 'enriching';
   // poll the enrichment endpoint until the background agents finish
@@ -304,13 +266,6 @@ export default function Journal() {
       )}
 
       {capMessage && <UpgradeCard message={capMessage} onDismiss={() => setCapMessage(null)} />}
-
-      {capture?.suggested_action && (
-        <ActionPrompt
-          action={capture.suggested_action}
-          onDone={() => setCapture({ ...capture, suggested_action: null })}
-        />
-      )}
 
       <SharePrompts
         capture={capture}

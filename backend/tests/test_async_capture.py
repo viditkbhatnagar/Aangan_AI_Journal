@@ -55,7 +55,7 @@ def test_async_delegation_surfaces_via_enrichment(client, db, family, async_mode
     enriched = client.get(f"/entries/{entry_id}/enrichment", headers=headers).json()
     action = enriched["suggested_action"]
     assert action is not None
-    assert action["status"] == "awaiting_approval"
+    assert action["status"] == "clarifying"  # drafted as a chat, never auto-run
 
 
 def test_enrichment_is_author_only(client, db, family, async_mode):
