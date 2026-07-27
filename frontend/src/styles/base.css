@@ -87,7 +87,11 @@ a:hover { border-bottom-color: var(--teal); }
   font-weight: 600;
   color: var(--ink);
   letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
 }
+.brand:hover { opacity: 0.72; }
 .brand .hindi { font-family: var(--deva); color: var(--red-ink); margin-left: 0.4rem; font-size: 1.1rem; }
 
 /* ---------- cards: letter sheets ---------- */
@@ -310,6 +314,12 @@ textarea {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin-bottom: var(--space-3);
 }
+@media (max-width: 480px) {
+  .topbar { gap: 8px; }
+  .user-chip .nm { display: none; }
+  .agents-btn { padding: 0.55em; }
+  .agents-btn .agents-lbl { display: none; }
+}
 .agents-btn {
   display: inline-flex; align-items: center; gap: 0.5em;
   font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase;
@@ -320,7 +330,12 @@ textarea {
 .user-chip {
   display: inline-flex; align-items: center; gap: 0.5em;
   font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--ink);
+  text-decoration: none; cursor: pointer;
+  padding: 0.3em 0.55em 0.3em 0.35em; border-radius: 999px;
+  border: 1px solid transparent; transition: border-color 0.2s ease, background 0.2s ease;
 }
+.user-chip:hover { border-color: var(--hair-2); background: var(--paper); }
+.user-chip.active { border-color: var(--red); }
 .user-chip .av {
   width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
   font-family: var(--serif); font-size: 0.9rem; color: #fbf3e6;

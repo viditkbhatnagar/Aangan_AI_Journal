@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { PostageStamp } from '../icons';
@@ -62,7 +63,8 @@ function useLetterReveal() {
 }
 
 export default function Welcome() {
-  const { login, verifyMfa, register, refreshMembers } = useAuth();
+  const { user, login, verifyMfa, register, refreshMembers } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // login | register | mfa
   const [form, setForm] = useState({ name: '', email: '', password: '', language: 'en', accept_terms: false });
   const [circleChoice, setCircleChoice] = useState('join'); // after register: join | create
@@ -83,11 +85,14 @@ export default function Welcome() {
     try {
       if (mode === 'mfa') {
         await verifyMfa(mfaCode.trim());
+        navigate('/');
       } else if (mode === 'login') {
         const result = await login(form.email, form.password);
         if (result?.mfaRequired) {
           setMode('mfa');
           setMfaCode('');
+        } else {
+          navigate('/');
         }
       } else {
         const source = new URLSearchParams(window.location.search).get('ref');
@@ -98,6 +103,7 @@ export default function Welcome() {
           await api.post('/circles/join', { invite_code: circleValue.trim() });
         }
         await refreshMembers();
+        navigate('/');
       }
     } catch (err) {
       setError(err.message);
@@ -112,7 +118,11 @@ export default function Welcome() {
     <main className="landing">
       <div className="land-top">
         <div className="wordmark">Aangan <span className="dev" lang="hi">आँगन</span></div>
-        <div className="meta">A letter home · est. 2026</div>
+        {user ? (
+          <button type="button" className="ghost" onClick={() => navigate('/')}>Back to the app →</button>
+        ) : (
+          <div className="meta">A letter home · est. 2026</div>
+        )}
       </div>
 
       {/* the letter sheet — the hero */}
@@ -139,7 +149,7 @@ export default function Welcome() {
             each of you has <b>chosen to share</b> — no more, no less.
           </p>
           <div className={`cta-row reveal-block ${revealed.cta ? 'in' : ''}`}>
-            <button type="button" onClick={() => scrollTo(loginRef)}>Enter the courtyard</button>
+            <button type="button" onClick={() => (user ? navigate('/') : scrollTo(loginRef))}>Enter the courtyard</button>
             <button type="button" className="ghost" onClick={() => scrollTo(rulesRef)}>See how it works</button>
           </div>
           <p className={`sign reveal-block ${revealed.sign ? 'in' : ''}`}>— yours, always · <span className="nm" lang="hi">आँगन</span></p>
@@ -183,20 +193,28 @@ export default function Welcome() {
         </div>
       </section>
 
-      {/* login / register */}
+      {/* login / register — or a welcome-back note if already inside */}
       <section className="land-section" ref={loginRef}>
         <div className="login-wrap">
           <div className="login-copy">
-            <h3>Come in.</h3>
+            <h3>{user ? `Welcome back, ${user.name}.` : 'Come in.'}</h3>
             <p>
-              {mode === 'register'
-                ? 'Sign the register — your journal starts private from the very first word.'
-                : 'Welcome back to your courtyard. Your letters are where you left them.'}
+              {user
+                ? 'You are already inside — your letters are where you left them.'
+                : mode === 'register'
+                  ? 'Sign the register — your journal starts private from the very first word.'
+                  : 'Welcome back to your courtyard. Your letters are where you left them.'}
             </p>
-            <p className="demo-note">Demo login · <b>aditya@ghar.family</b> · <b>aangan123</b></p>
+            {!user && <p className="demo-note">Demo login · <b>aditya@ghar.family</b> · <b>aangan123</b></p>}
           </div>
 
-          {mode === 'mfa' ? (
+          {user ? (
+            <div className="stack" style={{ alignSelf: 'center' }}>
+              <button type="button" onClick={() => navigate('/')} style={{ width: '100%' }}>
+                Enter the courtyard
+              </button>
+            </div>
+          ) : mode === 'mfa' ? (
             <form className="stack" onSubmit={submit} aria-label="Two-factor code">
               <div>
                 <label htmlFor="mfa-code">Code from your authenticator app</label>

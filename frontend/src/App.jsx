@@ -51,10 +51,17 @@ export default function App() {
     return location.pathname === '/reset' ? <ResetPassword /> : <Welcome />;
   }
 
+  // the wordmark leads back to the landing letter — full-bleed, outside the shell
+  if (location.pathname === '/welcome') {
+    return <Welcome />;
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
-        <span className="brand">Aangan<span className="hindi" lang="hi">आँगन</span></span>
+        <NavLink to="/welcome" className="brand" style={{ borderBottom: 'none' }} title="See the welcome letter">
+          Aangan<span className="hindi" lang="hi">आँगन</span>
+        </NavLink>
         <span className="row" style={{ width: 'auto' }}>
           {circles.length > 1 && (
             <select
@@ -74,12 +81,12 @@ export default function App() {
             aria-pressed={panelOpen}
             title="See which agents are working"
           >
-            <GearIcon /> Agents
+            <GearIcon /> <span className="agents-lbl">Agents</span>
           </button>
-          <span className="user-chip">
+          <NavLink to="/me" className="user-chip" title="Your writing desk" style={{ borderBottom: 'none' }}>
             <span className="av" aria-hidden="true">{user.name.charAt(0)}</span>
-            {user.name}
-          </span>
+            <span className="nm">{user.name}</span>
+          </NavLink>
         </span>
       </header>
       <AgentPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
