@@ -36,13 +36,32 @@ def create_action(
     )
     db.add(action)
     db.flush()
-    plan = doer.prepare(db, action, plan_hint)  # -> awaiting_approval
+    plan = doer.prepare(db, action, plan_hint)  # purchase -> clarifying; message/call -> awaiting_approval
     from services import activity
 
-    activity.emit(
-        user.id, "Doer",
-        f"Drafted a {plan.get('type', 'plan')} — nothing happens until you approve.",
-    )
+    if action.status == "clarifying":
+        activity.emit(
+            user.id, "Doer",
+            "Let's nail down the details before I buy anything — a couple of quick questions.",
+        )
+    else:
+        activity.emit(
+            user.id, "Doer",
+            f"Drafted a {plan.get('type', 'plan')} — nothing happens until you approve.",
+        )
+    return action
+
+
+def reply(db: Session, user: User, action_id: int, message: str) -> Action:
+    """Answer the Doer's clarifying question. May ask another question, or —
+    once the Doer is confident — search the shop, pick the best product, and
+    move the action to awaiting_approval. Still no purchase without approval."""
+    action = db.get(Action, action_id)
+    if action is None or action.created_by != user.id:
+        raise NotYourAction("Only the person who created an action can reply to it.")
+    if action.status != "clarifying":
+        raise WrongState(f"This action is {action.status}, not in a conversation.")
+    doer.advance_purchase(db, action, message.strip())
     return action
 
 

@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 import { startRecording } from '../voice';
+import { NibIcon } from '../icons';
 
 const MAX_RECORDING_MS = 5 * 60 * 1000; // soft cost cap; Plus can raise it later
 
-// Big hold-to-talk button. Hold to record; release to send the blob up.
-export default function HoldToTalk({ onRecorded, disabled }) {
+// Hold-to-record, styled as dipping a nib to write. Release to send the blob up.
+export default function HoldToTalk({ onRecorded, disabled, label = 'Dip the nib to speak' }) {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState(null);
   const sessionRef = useRef(null);
@@ -37,22 +38,20 @@ export default function HoldToTalk({ onRecorded, disabled }) {
   }
 
   return (
-    <div className="talk-frame">
+    <div>
       <button
         type="button"
-        className={`talk-button ${recording ? 'recording' : ''}`}
+        className={`hold ${recording ? 'rec' : ''}`}
         onPointerDown={begin}
         onPointerUp={end}
         onPointerLeave={() => recording && end()}
         disabled={disabled}
         aria-pressed={recording}
       >
-        {recording ? 'Listening…' : 'Hold to talk'}
+        <span className="nib-drop" aria-hidden="true"><NibIcon /></span>
+        {recording ? 'Listening — let go when done' : label}
       </button>
-      <p className="muted" style={{ marginTop: 'var(--space-2)' }}>
-        {recording ? 'Let go when you are done.' : 'Press and hold, speak freely.'}
-      </p>
-      {error && <p className="error-text">{error}</p>}
+      {error && <p className="error-text" style={{ marginTop: 'var(--space-1)' }}>{error}</p>}
     </div>
   );
 }

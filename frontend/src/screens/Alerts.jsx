@@ -28,9 +28,10 @@ export default function Alerts() {
 
   return (
     <div className="stack-lg">
-      <section>
+      <section className="screen-head">
+        <div className="meta">Care nudges</div>
         <h1>{t(lang, 'alerts.title')}</h1>
-        <p className="muted">{t(lang, 'alerts.subtitle')}</p>
+        <p>{t(lang, 'alerts.subtitle')}</p>
       </section>
 
       {fresh.length === 0 && (
@@ -40,40 +41,53 @@ export default function Alerts() {
         </div>
       )}
 
-      {fresh.map((alert) => (
-        <article key={alert.id} className="card stack">
-          <div className="row between">
-            <span className={`pill ${alert.severity}`}>{alert.severity}</span>
-            <span className="muted">{new Date(alert.created_at).toLocaleString()}</span>
+      {fresh.map((alert, i) => (
+        <article key={alert.id} className="telegram" style={{ opacity: alert.status === 'seen' ? 0.68 : 1 }}>
+          <span className={`tg-stamp ${alert.severity}`} aria-hidden="true">{alert.severity}</span>
+          <div className="tg-perf top" aria-hidden="true"></div>
+          <div className="tg-masthead">
+            <span className="tg-mark">Ghar Telegraph</span>
+            <span className="tg-no">
+              No. {String(alert.id).padStart(3, '0')} · {new Date(alert.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+            </span>
           </div>
-          <p style={{ fontSize: '1.05rem' }}>{alert.message}</p>
-          {alert.suggested_action && <p className="muted">💡 {alert.suggested_action}</p>}
-          <div className="row">
-            <button onClick={() => actOn(alert)}>{t(lang, 'alerts.act')}</button>
-            {alert.status === 'new' && (
-              <button className="ghost" onClick={() => setStatus(alert, 'seen')}>{t(lang, 'alerts.seen')}</button>
+          <div className="tg-body">
+            <div className="tg-line">From <b>a care wish</b> — delivered to {user.name}</div>
+            <p className="alert-msg">{alert.message}</p>
+            {alert.suggested_action && (
+              <div className="suggested">
+                <div className="meta">Suggested</div>
+                <p>{alert.suggested_action}</p>
+              </div>
             )}
-            <button className="quiet" onClick={() => setStatus(alert, 'dismissed')}>{t(lang, 'alerts.dismiss')}</button>
-            <button
-              className="quiet"
-              title="This looks wrong — tell a human"
-              onClick={async () => {
-                await api.post('/feedback', {
-                  kind: 'report', subject_kind: 'alert', subject_id: alert.id,
-                  message: alert.message,
-                });
-                setStatus(alert, 'seen');
-              }}
-            >
-              🚩
-            </button>
+            <div className="alert-actions">
+              <button onClick={() => actOn(alert)}>{t(lang, 'alerts.act')}</button>
+              {alert.status === 'new' && (
+                <button className="ghost" onClick={() => setStatus(alert, 'seen')}>{t(lang, 'alerts.seen')}</button>
+              )}
+              <button className="ghost" onClick={() => setStatus(alert, 'dismissed')}>{t(lang, 'alerts.dismiss')}</button>
+              <button
+                className="quiet"
+                title="This looks wrong — tell a human"
+                onClick={async () => {
+                  await api.post('/feedback', {
+                    kind: 'report', subject_kind: 'alert', subject_id: alert.id,
+                    message: alert.message,
+                  });
+                  setStatus(alert, 'seen');
+                }}
+              >
+                🚩
+              </button>
+            </div>
           </div>
+          <div className="tg-perf" aria-hidden="true"></div>
         </article>
       ))}
 
       {past.length > 0 && (
-        <details>
-          <summary className="muted">Earlier ({past.length})</summary>
+        <details className="trace">
+          <summary className="trace-summary">Earlier <span className="trace-count">{past.length}</span></summary>
           <div className="stack" style={{ marginTop: 'var(--space-2)' }}>
             {past.map((alert) => (
               <article key={alert.id} className="card row between">

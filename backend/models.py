@@ -294,7 +294,7 @@ class Action(Base):
     plan: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(
         String, default="draft", nullable=False
-    )  # draft|awaiting_approval|approved|completed|cancelled
+    )  # draft|clarifying|awaiting_approval|approved|completed|cancelled
     result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     # the no-credentials rule is never even tempted.
     doer_purchase_site: str = "https://www.demoblaze.com"
     doer_headless: bool = True
+    # When on, the Doer really searches the shop (Playwright) to find and rank
+    # products before you approve, and to add the chosen one to the cart. Off in
+    # tests so the suite stays fast, deterministic, and offline.
+    doer_live_search: bool = True
 
     # Anti alert-fatigue: max alerts per recipient per day.
     alert_daily_cap: int = 5

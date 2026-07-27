@@ -9,6 +9,10 @@ def test_intent_detection_positive_and_negative():
         "I want to order chocolates for my husband. You do it."
     ).startswith("I want to order chocolates")
     assert doer.detect_action_intent("आज अच्छा दिन था। मिठाई मंगवा दो।") is not None
+    # a plain command is enough — no "you do it" needed
+    assert doer.detect_action_intent("Order some flowers for Deepa.").lower().startswith("order some flowers")
+    assert doer.detect_action_intent("Please buy chocolates.") is not None
+    assert doer.detect_action_intent("Book a cab for tomorrow.") is not None
     # feelings and shopping stories are NOT delegations
     assert doer.detect_action_intent("I ordered chocolates yesterday, they were lovely.") is None
     assert doer.detect_action_intent("A quiet day, made poha and read a book.") is None
@@ -23,7 +27,7 @@ def test_journal_delegation_drafts_action_awaiting_approval(client, family):
     assert resp.status_code == 200
     action = resp.json()["suggested_action"]
     assert action is not None
-    assert action["status"] == "awaiting_approval"  # drafted, NOT executed
+    assert action["status"] == "clarifying"  # drafted as a chat, NOT executed
     assert action["result"] is None
     assert "chocolate" in action["intent"].lower()
 

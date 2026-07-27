@@ -7,64 +7,16 @@ import HoldToTalk from '../components/HoldToTalk';
 import ShareControls from '../components/ShareControls';
 import UpgradeCard from '../components/UpgradeCard';
 
-// When an entry clearly asks for something to be DONE ("order chocolates —
-// you do it"), the Doer drafts it. Nothing runs until the author approves.
-function ActionPrompt({ action, onDone }) {
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState(null);
-  if (!action) return null;
-
-  async function approve() {
-    setBusy(true);
-    try {
-      const approved = await api.post(`/actions/${action.id}/approve`);
-      setResult(approved.result);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (result) {
-    const url = result.checkout_url || result.url || result.deep_link;
-    return (
-      <section className="card stack" style={{ borderColor: 'var(--color-accent)' }}>
-        <p>🎁 {result.note}</p>
-        {url && (
-          <a className="btn" href={url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', textAlign: 'center' }}>
-            Open it
-          </a>
-        )}
-        <button className="quiet" onClick={onDone}>Done</button>
-      </section>
-    );
-  }
-
-  return (
-    <section className="card stack" style={{ borderColor: 'var(--color-accent)' }}>
-      <p>🎁 I heard something to do: <strong>“{action.intent}”</strong></p>
-      <p className="muted">I've prepared it — nothing happens until you say yes. You'll finish any payment yourself.</p>
-      <div className="row">
-        <button disabled={busy} onClick={approve}>{busy ? 'Preparing…' : 'Yes, go ahead'}</button>
-        <button className="ghost" disabled={busy} onClick={() => navigate('/actions')}>Review first</button>
-        <button className="quiet" disabled={busy} onClick={async () => { await api.post(`/actions/${action.id}/cancel`); onDone(); }}>
-          No, leave it
-        </button>
-      </div>
-    </section>
-  );
-}
-
 function SharePrompts({ capture, onDismiss, onShared }) {
   if (!capture?.share_suggestions?.length && !capture?.applied_rules?.length) return null;
   return (
-    <section className="card stack" style={{ borderColor: 'var(--color-accent)' }}>
+    <section className="card stack" style={{ borderColor: 'var(--amber)' }}>
       {capture.applied_rules.map((rule) => (
         <p key={rule} className="muted">✨ Shared automatically because of your rule: “{rule}”.</p>
       ))}
       {capture.share_suggestions.map((s, i) => (
         <div key={i} className="stack">
-          <p>“{s.text}”</p>
+          <p style={{ fontStyle: 'italic' }}>“{s.text}”</p>
           <p className="muted">{s.reason}</p>
           <div className="row">
             <button
@@ -102,10 +54,10 @@ function FactCard({ entry, fact, onChanged }) {
   }
 
   return (
-    <div className="stack" style={{ background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
-      <div className="row between">
-        <span className="pill">{fact.type}</span>
-        <span className="row" style={{ width: 'auto' }}>
+    <div className="mnote">
+      <div className="row between" style={{ marginBottom: 2 }}>
+        <span className="k">{fact.type}</span>
+        <span className="row" style={{ width: 'auto', gap: '0.2rem' }}>
           <button className="quiet" onClick={() => setEditing(!editing)} title="Correct this note">✏️</button>
           <button className="quiet" onClick={remove} title="Remove this note">🗑</button>
         </span>
@@ -116,13 +68,14 @@ function FactCard({ entry, fact, onChanged }) {
           <button disabled={!text.trim()} onClick={save}>Save</button>
         </div>
       ) : (
-        <p>{fact.content}</p>
+        <span className="v">{fact.content}</span>
       )}
       <ShareControls entryId={entry.id} factId={fact.id} current={fact.visibility} onChanged={onChanged} />
     </div>
   );
 }
 
+// One journal entry as a sealed letter that unseals to ruled paper.
 function EntryCard({ entry, onChanged }) {
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -132,39 +85,57 @@ function EntryCard({ entry, onChanged }) {
     onChanged();
   }
 
+  const when = new Date(entry.created_at).toLocaleString(undefined, {
+    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+  });
+
   return (
-    <article className="card stack">
-      <div className="row between">
-        <span className="muted">{new Date(entry.created_at).toLocaleString()}</span>
-        <span className="row" style={{ width: 'auto' }}>
-          <span className={`pill ${entry.visibility}`}>{entry.visibility}</span>
-          {confirming ? (
-            <>
-              <button className="quiet" style={{ color: 'var(--color-danger)' }} onClick={remove}>
-                Erase forever
-              </button>
-              <button className="quiet" onClick={() => setConfirming(false)}>Keep</button>
-            </>
-          ) : (
-            <button className="quiet" onClick={() => setConfirming(true)} aria-label="Delete entry" title="Delete this entry everywhere">
-              🗑
-            </button>
-          )}
+    <article className={`letter ${open ? 'open' : ''}`}>
+      <div className="env-flap" aria-hidden="true"><span className="wax-mini"><span lang="hi">आ</span></span></div>
+      <button type="button" className="env-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="postmark">{when}</span>
+        <span className={`pill ${entry.visibility}`}>{entry.visibility}</span>
+        <span className="unseal-hint">
+          {open ? 'Open letter' : 'Tap to unseal'}
+          {entry.facts?.length > 0 && ` · ${entry.facts.length} noted`}
+          <span className="chev" aria-hidden="true">›</span>
         </span>
-      </div>
-      <p>{entry.summary || entry.transcript}</p>
-      <button className="quiet" onClick={() => setOpen(!open)}>
-        {open ? 'Hide details' : `Details${entry.facts?.length ? ` · ${entry.facts.length} noted` : ''}`}
       </button>
-      {open && (
-        <div className="stack" style={{ borderTop: '1px solid var(--color-line)', paddingTop: 'var(--space-2)' }}>
-          <p className="muted" style={{ whiteSpace: 'pre-wrap' }}>{entry.transcript}</p>
-          <ShareControls entryId={entry.id} current={entry.visibility} onChanged={onChanged} />
-          {entry.facts?.map((fact) => (
-            <FactCard key={fact.id} entry={entry} fact={fact} onChanged={onChanged} />
-          ))}
+      <div className="env-wrap">
+        <div className="env-body">
+          <div className="env-inner">
+            <p className="prose">{entry.transcript}</p>
+            {entry.summary && entry.summary !== entry.transcript && (
+              <p className="muted" style={{ marginTop: 10, fontStyle: 'italic' }}>✍️ {entry.summary}</p>
+            )}
+            <div className="margin-notes">
+              <ShareControls entryId={entry.id} current={entry.visibility} onChanged={onChanged} />
+              {entry.facts?.length > 0 && (
+                <>
+                  <div className="mn-h" style={{ marginTop: 14 }}>In the margin · {entry.facts.length} note{entry.facts.length > 1 ? 's' : ''}</div>
+                  {entry.facts.map((fact) => (
+                    <FactCard key={fact.id} entry={entry} fact={fact} onChanged={onChanged} />
+                  ))}
+                </>
+              )}
+              <div className="row" style={{ marginTop: 12 }}>
+                {confirming ? (
+                  <>
+                    <button className="quiet" style={{ color: 'var(--red-ink)' }} onClick={remove}>
+                      Erase forever
+                    </button>
+                    <button className="quiet" onClick={() => setConfirming(false)}>Keep</button>
+                  </>
+                ) : (
+                  <button className="quiet" onClick={() => setConfirming(true)} aria-label="Delete entry" title="Delete this entry everywhere">
+                    🗑 Burn this letter
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </article>
   );
 }
@@ -172,6 +143,7 @@ function EntryCard({ entry, onChanged }) {
 export default function Journal() {
   const { user } = useAuth();
   const lang = user.language;
+  const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [capture, setCapture] = useState(null);
   const [typing, setTyping] = useState(false);
@@ -182,6 +154,15 @@ export default function Journal() {
 
   const refresh = useCallback(async () => setEntries(await api.get('/entries')), []);
   useEffect(() => { refresh(); }, [refresh]);
+
+  // A spoken/typed command ("order flowers") becomes an action — hop straight
+  // into the Actions chat where the Doer is waiting with its first question.
+  useEffect(() => {
+    const act = capture?.suggested_action;
+    if (!act) return;
+    setCapture((c) => (c ? { ...c, suggested_action: null } : c));
+    navigate('/actions', { state: { focusActionId: act.id } });
+  }, [capture?.suggested_action, navigate]);
 
   // async capture: the save returns instantly with status 'enriching';
   // poll the enrichment endpoint until the background agents finish
@@ -268,49 +249,58 @@ export default function Journal() {
 
   return (
     <div className="stack-lg">
-      <section>
+      <section className="screen-head">
+        <div className="meta">Your diary</div>
         <h1>{t(lang, 'journal.title')}</h1>
-        <p className="muted">{t(lang, 'journal.subtitle')}</p>
+        <p>{t(lang, 'journal.subtitle')}</p>
       </section>
 
-      <HoldToTalk onRecorded={onRecorded} disabled={busy} />
-      <p className="muted" style={{ textAlign: 'center', fontSize: '0.75rem' }}>
-        Voice is transcribed by Deepgram · summaries use our AI provider ·{' '}
-        <a href="/api/legal/privacy" target="_blank" rel="noreferrer">privacy</a>
-      </p>
-      {busy && <p className="muted" style={{ textAlign: 'center' }}>Listening back and making notes…</p>}
-      {!busy && capture?.entry?.status === 'enriching' && (
-        <p className="muted" role="status" style={{ textAlign: 'center' }}>
-          Saved ✓ — still making notes in the background (watch the Agents panel)…
+      <section className="card">
+        <div className="compose-cap"><span aria-hidden="true">✒</span> Pen a new letter to yourself</div>
+        <div className="row" style={{ flexWrap: 'wrap' }}>
+          <HoldToTalk onRecorded={onRecorded} disabled={busy} />
+          <button className="quiet" onClick={() => setTyping(!typing)}>
+            {typing ? t(lang, 'journal.type.cancel') : t(lang, 'journal.type')}
+          </button>
+        </div>
+        {typing && (
+          <form className="stack" style={{ marginTop: 14 }} onSubmit={onTyped}>
+            <textarea
+              rows={4}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={t(lang, 'journal.type.placeholder')}
+            />
+            <button disabled={busy || !text.trim()}>{t(lang, 'journal.type.submit')}</button>
+          </form>
+        )}
+        <p className="meta" style={{ marginTop: 12, textTransform: 'none', letterSpacing: '0.03em' }}>
+          Voice is transcribed by Deepgram · summaries use our AI provider ·{' '}
+          <a href="/api/legal/privacy" target="_blank" rel="noreferrer">privacy</a>
         </p>
+      </section>
+
+      {busy && (
+        <article className="letter live-letter">
+          <div className="row between" style={{ marginBottom: 10 }}>
+            <span className="postmark meta">Just now</span>
+            <span className="pill private">private</span>
+          </div>
+          <p className="prose live"><span>Listening back and making notes</span><span className="live-dots" aria-hidden="true"><i></i><i></i><i></i></span></p>
+        </article>
+      )}
+      {!busy && capture?.entry?.status === 'enriching' && (
+        <article className="letter live-letter" role="status">
+          <div className="row between" style={{ marginBottom: 10 }}>
+            <span className="postmark meta">Just now</span>
+            <span className="pill private">private</span>
+          </div>
+          <p className="prose live"><span>Saved ✓ — making notes (watch the Agents panel)</span><span className="live-dots" aria-hidden="true"><i></i><i></i><i></i></span></p>
+        </article>
       )}
       {notice && <p className="muted" role="status">{notice}</p>}
 
-      <div style={{ textAlign: 'center' }}>
-        <button className="quiet" onClick={() => setTyping(!typing)}>
-          {typing ? t(lang, 'journal.type.cancel') : t(lang, 'journal.type')}
-        </button>
-      </div>
-      {typing && (
-        <form className="card stack" onSubmit={onTyped}>
-          <textarea
-            rows={4}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t(lang, 'journal.type.placeholder')}
-          />
-          <button disabled={busy || !text.trim()}>{t(lang, 'journal.type.submit')}</button>
-        </form>
-      )}
-
       {capMessage && <UpgradeCard message={capMessage} onDismiss={() => setCapMessage(null)} />}
-
-      {capture?.suggested_action && (
-        <ActionPrompt
-          action={capture.suggested_action}
-          onDone={() => setCapture({ ...capture, suggested_action: null })}
-        />
-      )}
 
       <SharePrompts
         capture={capture}
@@ -324,7 +314,9 @@ export default function Journal() {
           अभी यहाँ कुछ नहीं है — nothing here yet.<br />Hold the button and just talk.
         </div>
       ) : (
-        entries.map((entry) => <EntryCard key={entry.id} entry={entry} onChanged={refresh} />)
+        <div className="stack-lg">
+          {entries.map((entry) => <EntryCard key={entry.id} entry={entry} onChanged={refresh} />)}
+        </div>
       )}
     </div>
   );

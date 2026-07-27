@@ -218,6 +218,10 @@ class ActionIn(BaseModel):
     plan_hint: dict | None = None  # optional shape hints (type, item, to, body...)
 
 
+class ReplyIn(BaseModel):
+    message: str
+
+
 class ActionOut(ORMModel):
     id: int
     created_by: int

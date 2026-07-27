@@ -1,41 +1,64 @@
-/* Aangan design tokens — "courtyard at dusk".
-   Warm plaster, terracotta, deep haveli teal, marigold. */
-@font-face {
-  font-family: 'Fraunces';
-  src: url('/fonts/fraunces-var.woff2') format('woff2');
-  font-weight: 400 700;
-  font-style: normal;
-  font-display: swap;
-}
+/* Aangan design tokens — "Chitthi / Letters Home".
+   Warm aged paper, ink indigo, postal red. Serif prose against
+   typewriter-mono metadata is the whole identity. */
 
 :root {
-  --color-surface: #f7f1e5;
-  --color-surface-raised: #fffaf0;
-  --color-surface-sunken: #efe6d4;
-  --color-text: #22403c;
-  --color-text-soft: #5b6f6c;
-  --color-primary: #c4622d;
-  --color-primary-deep: #a34d1f;
-  --color-accent: #e9a319;
-  --color-teal: #1f4e4a;
-  --color-rose: #d98e73;
-  --color-danger: #b3402e;
-  --color-line: rgba(31, 78, 74, 0.14);
+  /* palette — warm paper, ink, postal red */
+  --paper: #f4ecdd;
+  --paper-2: #efe5d2;
+  --surface: #faf4e9;
+  --ink: #22303a;
+  --ink-soft: #4e5a63;
+  --red: #b23a2e;
+  --red-ink: #8e2c22;
+  --olive: #7b7a52;
+  --olive-ink: #565633;
+  --teal: #3e6e70;
+  --teal-ink: #2c5254;
+  --hair: #d8c6a8;
+  --hair-2: #c9b58e;
+  --amber: #c08a2e;
+  --amber-ink: #7a531a;
+  --flame: #f6b84a;
+  --flame-deep: #e8912f;
+  --flame-core: #fdebb4;
+  --clay: #a85a46;
+  --clay-ink: #5e2f22;
 
-  --font-display: 'Fraunces', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-  --font-body: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* legacy aliases — older components reference these names */
+  --color-surface: var(--paper);
+  --color-surface-raised: var(--surface);
+  --color-surface-sunken: var(--paper-2);
+  --color-text: var(--ink);
+  --color-text-soft: var(--ink-soft);
+  --color-primary: var(--red);
+  --color-primary-deep: var(--red-ink);
+  --color-accent: var(--amber);
+  --color-teal: var(--teal-ink);
+  --color-rose: var(--clay);
+  --color-danger: var(--red-ink);
+  --color-line: var(--hair);
+
+  /* type — serif prose · mono metadata · devanagari */
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+  --mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+  --deva: 'Noto Sans Devanagari', 'Nirmala UI', system-ui, sans-serif;
+  --font-display: var(--serif);
+  --font-body: var(--serif);
 
   --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);
-  --text-lg: 1.25rem;
-  --text-xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
-  --text-hero: clamp(2.2rem, 1.4rem + 3.4vw, 3.6rem);
+  --text-lg: 1.28rem;
+  --text-xl: clamp(1.7rem, 1.2rem + 1.8vw, 2.5rem);
+  --text-hero: clamp(2.1rem, 1.4rem + 3.6vw, 4.1rem);
 
-  --radius: 1.25rem;
-  --radius-sm: 0.75rem;
-  --radius-arch: 50% 50% 1.25rem 1.25rem / 42% 42% 1.25rem 1.25rem;
+  /* letters sit nearly square-cornered, like paper */
+  --radius: 3px;
+  --radius-sm: 3px;
 
-  --shadow-soft: 0 1px 2px rgba(34, 64, 60, 0.06), 0 10px 30px -12px rgba(34, 64, 60, 0.22);
-  --shadow-lift: 0 2px 4px rgba(34, 64, 60, 0.08), 0 18px 44px -16px rgba(163, 77, 31, 0.35);
+  --shadow-press: 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 6px rgba(34, 48, 58, 0.09),
+    0 12px 28px -18px rgba(34, 48, 58, 0.5);
+  --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.7), 0 10px 24px -12px rgba(34, 48, 58, 0.32);
+  --shadow-soft: var(--shadow-lift);
 
   --space-1: 0.375rem;
   --space-2: 0.75rem;
@@ -46,4 +69,6 @@
   --duration-fast: 150ms;
   --duration-normal: 320ms;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
 }

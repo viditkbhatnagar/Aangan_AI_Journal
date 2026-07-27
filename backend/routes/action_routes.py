@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user
 from db import get_db
 from models import Action, User
-from schemas import ActionIn, ActionOut
+from schemas import ActionIn, ActionOut, ReplyIn
 from services import actions as actions_service
 
 router = APIRouter(tags=["actions"])
@@ -25,6 +25,28 @@ def create_action(
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="No such alert.")
+
+
+@router.post("/actions/{action_id}/reply", response_model=ActionOut)
+async def reply_action(
+    action_id: int,
+    body: ReplyIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not body.message.strip():
+        raise HTTPException(status_code=422, detail="Type a reply first.")
+    try:
+        # advancing may run sync Playwright (product search) → off the event loop
+        action = await run_in_threadpool(
+            actions_service.reply, db, user, action_id, body.message
+        )
+    except actions_service.NotYourAction:
+        raise HTTPException(status_code=404, detail="No such action.")
+    except actions_service.WrongState as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    db.refresh(action)
+    return action
 
 
 @router.get("/actions", response_model=list[ActionOut])

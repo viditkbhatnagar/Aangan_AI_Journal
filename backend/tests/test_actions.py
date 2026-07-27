@@ -16,11 +16,57 @@ def create(client, user, intent, plan_hint=None):
     return resp.json()
 
 
-def test_new_action_awaits_approval(client, family):
+def reply(client, user, action_id, message):
+    resp = client.post(
+        f"/actions/{action_id}/reply",
+        json={"message": message},
+        headers=auth_headers(user),
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+def test_purchase_starts_a_clarifying_chat(client, family):
     action = create(client, family.aditya, "order Deepa's chocolates")
-    assert action["status"] == "awaiting_approval"
+    # a purchase no longer jumps straight to approval — it asks first
+    assert action["status"] == "clarifying"
     assert action["plan"]["type"] == "purchase"
     assert action["result"] is None
+    assert any(c["role"] == "agent" for c in action["plan"]["conversation"])
+
+
+def test_purchase_conversation_reaches_approval_then_completes(client, family):
+    action = create(client, family.aditya, "order chocolates")
+    assert action["status"] == "clarifying"
+    # answering the question moves it to approval (never straight to buying)
+    action = reply(client, family.aditya, action["id"], "assorted, under 500")
+    assert action["status"] == "awaiting_approval"
+    assert action["plan"]["item"]  # a refined search query
+    assert any(c["role"] == "agent" for c in action["plan"]["conversation"])
+    approved = client.post(
+        f"/actions/{action['id']}/approve", headers=auth_headers(family.aditya)
+    ).json()
+    assert approved["status"] == "completed"
+    assert approved["result"]["status"] in {"ready_for_human", "manual"}
+
+
+def test_reply_only_by_creator_and_only_while_clarifying(client, family):
+    action = create(client, family.aditya, "order flowers")
+    # someone else cannot answer your clarifying chat
+    resp = client.post(
+        f"/actions/{action['id']}/reply",
+        json={"message": "roses"},
+        headers=auth_headers(family.abhishek),
+    )
+    assert resp.status_code == 404
+    # once it has moved on, replies are refused
+    reply(client, family.aditya, action["id"], "roses, under 800")
+    resp = client.post(
+        f"/actions/{action['id']}/reply",
+        json={"message": "actually lilies"},
+        headers=auth_headers(family.aditya),
+    )
+    assert resp.status_code == 409
 
 
 def test_message_action_drafts_but_never_sends(client, family):
@@ -57,6 +103,8 @@ def test_only_creator_can_approve_or_cancel(client, family):
 
 def test_purchase_completes_to_safe_handoff(client, family):
     action = create(client, family.aditya, "order a phone for Deepa")
+    action = reply(client, family.aditya, action["id"], "around 15000")
+    assert action["status"] == "awaiting_approval"
     approved = client.post(
         f"/actions/{action['id']}/approve", headers=auth_headers(family.aditya)
     ).json()
@@ -118,4 +166,4 @@ def test_action_from_alert_links_and_requires_recipient(client, db, family):
     assert resp.status_code == 404
 
     ok = create(client, family.aditya, "order chocolates for Mumma", None)
-    assert ok["status"] == "awaiting_approval"
+    assert ok["status"] == "clarifying"

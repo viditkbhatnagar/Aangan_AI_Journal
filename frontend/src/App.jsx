@@ -13,15 +13,18 @@ import { t } from './i18n';
 import MemoryBook from './screens/MemoryBook';
 import Me from './screens/Me';
 import AgentPanel from './components/AgentPanel';
+import {
+  ActionsIcon, AlertsIcon, AskIcon, GearIcon, HomeIcon, JournalIcon, MeIcon, MemoryIcon,
+} from './icons';
 
 const NAV = [
-  { to: '/', icon: '🏡', key: 'nav.home' },
-  { to: '/journal', icon: '📓', key: 'nav.journal' },
-  { to: '/ask', icon: '💬', key: 'nav.ask' },
-  { to: '/alerts', icon: '🔔', key: 'nav.alerts' },
-  { to: '/actions', icon: '🎁', key: 'nav.actions' },
-  { to: '/memory', icon: '📖', key: 'nav.memory' },
-  { to: '/me', icon: '🪞', key: 'nav.me' },
+  { to: '/', Icon: HomeIcon, key: 'nav.home' },
+  { to: '/journal', Icon: JournalIcon, key: 'nav.journal' },
+  { to: '/ask', Icon: AskIcon, key: 'nav.ask' },
+  { to: '/alerts', Icon: AlertsIcon, key: 'nav.alerts' },
+  { to: '/actions', Icon: ActionsIcon, key: 'nav.actions' },
+  { to: '/memory', Icon: MemoryIcon, key: 'nav.memory' },
+  { to: '/me', Icon: MeIcon, key: 'nav.me' },
 ];
 
 export default function App() {
@@ -50,15 +53,15 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="row between" style={{ marginBottom: 'var(--space-3)' }}>
-        <span className="brand">Aangan<span className="hindi">आँगन</span></span>
+      <header className="topbar">
+        <span className="brand">Aangan<span className="hindi" lang="hi">आँगन</span></span>
         <span className="row" style={{ width: 'auto' }}>
           {circles.length > 1 && (
             <select
               aria-label="Active family circle"
               value={activeCircleId ?? ''}
               onChange={(e) => switchCircle(Number(e.target.value))}
-              style={{ width: 'auto', padding: '0.3rem 0.5rem' }}
+              style={{ width: 'auto', padding: '0.3rem 0.5rem', fontFamily: 'var(--mono)', fontSize: '0.72rem' }}
             >
               {circles.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -66,14 +69,17 @@ export default function App() {
             </select>
           )}
           <button
-            className="quiet"
+            className="agents-btn"
             onClick={() => setPanelOpen(!panelOpen)}
             aria-pressed={panelOpen}
             title="See which agents are working"
           >
-            ⚙️ Agents
+            <GearIcon /> Agents
           </button>
-          <span className="muted">{user.name}</span>
+          <span className="user-chip">
+            <span className="av" aria-hidden="true">{user.name.charAt(0)}</span>
+            {user.name}
+          </span>
         </span>
       </header>
       <AgentPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
@@ -88,13 +94,15 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <nav className="bottom-nav" aria-label="Main navigation">
-        {NAV.map(({ to, icon, key }) => (
-          <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
-            <span className="icon" aria-hidden="true">{icon}</span>
-            {t(user.language, key)}
-            {to === '/alerts' && alertCount > 0 && <span className="badge">{alertCount}</span>}
-          </NavLink>
-        ))}
+        <div className="dock-inner">
+          {NAV.map(({ to, Icon, key }) => (
+            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
+              <Icon />
+              {t(user.language, key)}
+              {to === '/alerts' && alertCount > 0 && <span className="badge">{alertCount}</span>}
+            </NavLink>
+          ))}
+        </div>
       </nav>
     </div>
   );
