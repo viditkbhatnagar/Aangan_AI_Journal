@@ -197,10 +197,16 @@ export default function Me() {
 
   return (
     <div className="stack-lg">
-      <section className="row between">
-        <div>
+      <section className="row between" style={{ alignItems: 'flex-start' }}>
+        <div className="screen-head" style={{ marginBottom: 0 }}>
+          <div className="meta">Private · sealed</div>
           <h1>{user.name}</h1>
-          <p className="muted">{t(user.language, 'me.subtitle')}</p>
+          <p>{t(user.language, 'me.subtitle')}</p>
+          <div className="desk-tools" aria-hidden="true">
+            <svg width="26" height="18" viewBox="0 0 26 18" fill="none"><path d="M3 15l3-1 15-15 2 2-15 15-4 1z" transform="translate(0,1) scale(.9)" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
+            <svg width="22" height="18" viewBox="0 0 22 18" fill="none"><path d="M5 8h12v4a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z" stroke="currentColor" strokeWidth="1.3" /><ellipse cx="11" cy="8" rx="6" ry="2" stroke="currentColor" strokeWidth="1.3" /></svg>
+            <span className="meta" style={{ textTransform: 'none', letterSpacing: '0.02em', fontSize: '0.66rem' }}>nib · inkwell · a quiet corner</span>
+          </div>
         </div>
         <button className="ghost" onClick={logout}>{t(user.language, 'me.logout')}</button>
       </section>
@@ -208,7 +214,13 @@ export default function Me() {
       {error && <p className="error-text">{error}</p>}
 
       <section className="card stack">
-        <h2>🪞 Mirror</h2>
+        <div className="card-title" style={{ marginBottom: 0 }}>
+          <h2>Your mirror</h2>
+          <span className="private-tag">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.8" /></svg>
+            Only you
+          </span>
+        </div>
         {mirror && (
           <>
             <div className="row" style={{ gap: 'var(--space-4)' }}>
@@ -228,7 +240,7 @@ export default function Me() {
       </section>
 
       <section className="card stack">
-        <h2>✨ My sharing rules</h2>
+        <h2>Sharing rules</h2>
         <p className="muted">Standing yes-es you set up yourself — e.g. gift ideas go to everyone.</p>
         {rules.map((r) => (
           <div key={r.id} className="row between">
@@ -248,11 +260,11 @@ export default function Me() {
       </section>
 
       <section className="card stack">
-        <h2>🔔 My alert triggers</h2>
+        <h2>Alert triggers</h2>
         <p className="muted">About you, by you — who should be told when you note something.</p>
         {triggers.map((t) => (
-          <div key={t.id} className="row between">
-            <span>{t.description}</span>
+          <div key={t.id} className="care-eg row between">
+            <span>“{t.description}”</span>
             <span className={`pill ${t.severity_hint}`}>{t.severity_hint}</span>
           </div>
         ))}
@@ -286,13 +298,13 @@ export default function Me() {
       </section>
 
       <section className="card stack">
-        <h2>💌 Help & feedback</h2>
+        <h2>Help & feedback</h2>
         <p className="muted">A human reads every message — usually within a day or two.</p>
         <HelpForm />
       </section>
 
       <section className="card stack">
-        <h2>✨ Aangan Plus</h2>
+        <h2>Aangan Plus</h2>
         <p className="muted">
           Unlimited voice minutes and Companion questions, the full memory book,
           and first access to new features — one plan for the whole family.
@@ -303,7 +315,7 @@ export default function Me() {
       <MfaCard user={user} />
 
       <section className="card stack">
-        <h2>🏘️ Another circle</h2>
+        <h2>Another circle</h2>
         <p className="muted">
           Family comes in many shapes — join or start a second circle, and
           switch between them from the top bar. Each circle only ever sees
@@ -313,7 +325,7 @@ export default function Me() {
       </section>
 
       <section className="card stack">
-        <h2>⚙️ Settings</h2>
+        <h2>Settings</h2>
         <div>
           <label htmlFor="lang">Language</label>
           <select id="lang" value={user.language} onChange={(e) => setLanguage(e.target.value)}>
