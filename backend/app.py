@@ -33,6 +33,7 @@ from routes import (
     ask_routes,
     auth_routes,
     circle_routes,
+    converse_routes,
     entry_routes,
     fact_routes,
     feedback_routes,
@@ -42,6 +43,7 @@ from routes import (
     plus_routes,
     rule_routes,
     speak_routes,
+    thoughts_routes,
 )
 
 app = FastAPI(title="Aangan", version="1.0")
@@ -86,7 +88,7 @@ async def rate_limit(request, call_next):
     scope = None
     if path.startswith("/auth/"):
         scope, cap = "auth", settings.rate_limit_auth_max
-    elif path == "/ask":
+    elif path in ("/ask", "/converse"):  # a baithak turn costs like an ask
         scope, cap = "ask", settings.rate_limit_ask_max
     if scope is not None:
         ip = request.client.host if request.client else "unknown"
@@ -113,6 +115,8 @@ app.include_router(plus_routes.router)
 app.include_router(fact_routes.router)
 app.include_router(feedback_routes.router)
 app.include_router(speak_routes.router)
+app.include_router(thoughts_routes.router)
+app.include_router(converse_routes.router)
 
 
 @app.get("/health")

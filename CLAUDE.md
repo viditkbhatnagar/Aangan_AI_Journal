@@ -51,17 +51,30 @@ stay deterministic even when `.env` has keys.
 ## Architecture map
 
 - `backend/app.py` — FastAPI app; routes live in `backend/routes/*.py`
-- `backend/models.py` — all ORM tables (visibility enum: private/circle/custom)
+- `backend/models.py` — all ORM tables (visibility enum: private/circle/custom;
+  `conversations` + `conversation_turns` hold Baithak multi-turn chats)
 - `backend/agents/` — one plain-Python module per agent:
   - `librarian.py` — **the privacy spine.** ALL retrieval goes through it; it
     enforces visibility on both SQLite and Chroma and re-checks every vector
     hit against the live relational row.
   - `consent_guardian.py` — the ONLY code path that moves content from private
     to shared (explicit share or the author's own standing rule).
-  - `companion.py` (answers), `conductor.py` (routing), `transcriber.py`
-    (Deepgram), `summarizer.py`/`extractor.py`, `alerter.py` (rate-limited
-    triggers), `doer.py` (Playwright actions with human-approval gate),
-    `prompter.py`/`relationship_radar.py` (nudges), `keepsake.py`/`mirror.py`
+  - `companion.py` (answers; `compose_reply` is the conversational Baithak
+    variant — same grounding rules, re-grounded on THIS turn's snippets),
+    `conductor.py` (routing; `handle_converse` re-runs `librarian.search`
+    fresh on EVERY turn — snippets are never cached across turns),
+    `transcriber.py` (Deepgram), `summarizer.py`/`extractor.py`,
+    `alerter.py` (rate-limited triggers), `doer.py` (Playwright actions with
+    human-approval gate), `prompter.py`/`relationship_radar.py` (nudges),
+    `personal_radar.py` (author-only prospective-memory nudges: dated facts
+    near their day + one gentle open-plan reminder; max 2/call, ≤14-day facts),
+    `reflector.py` (author-only warm weekly reflection for /thoughts),
+    `keepsake.py`/`mirror.py`, `wording_guard.py` (the shared never-medical
+    regex — Alerter/PersonalRadar/Reflector all reject clinical wording in code)
+  - `speaker.py` — reply-voice provider chain: English → Deepgram Aura;
+    other languages (Hindi!) → OpenAI TTS `gpt-4o-mini-tts`, but ONLY with a
+    direct api.openai.com key (OpenRouter has no audio endpoint — skipped,
+    logged once); else `None` → 204 → browser voice fallback.
   - `llm.py` — provider chain: OpenAI/OpenRouter → Anthropic → deterministic
     fallback. Every LLM call must pass a `fallback=` callable.
 - `backend/services/capture.py` — the entry pipeline (also detects "you do it"
@@ -73,24 +86,35 @@ stay deterministic even when `.env` has keys.
   `services/activity.py` — per-user agent-activity feed (right-hand "Agents"
   panel); `services/circle_context.py` — the validated X-Circle-Id active
   circle (users can belong to several circles; a switcher sits in the header)
+- Personal layer routes: `routes/thoughts_routes.py` (`GET /thoughts` —
+  mirror + weekly reflection + open loops + upcoming, ALL author-only) and
+  `routes/converse_routes.py` (`POST /converse`, `GET /conversations/{id}` —
+  owner-only 404 otherwise; every user turn passes `check_ask_allowed` and
+  writes an `AskRecord`, so Baithak turns count against the ask cap)
 - `backend/alembic/` — migrations. `python scripts/migrate.py` brings any DB
   current (fresh → build, pre-alembic → stamp, managed → upgrade)
 - Auth: TOTP MFA is optional per-user (enroll in Me → Security); challenge
   tokens carry scope=mfa and are never accepted as sessions
 - `frontend/src/screens/` — one file per screen; `src/api.js` keeps the JWT in
-  memory only (never localStorage)
+  memory only (never localStorage). `Thoughts.jsx` is the personal dashboard
+  (/thoughts, nav between Journal and Ask); `Ask.jsx` is the multi-turn
+  Baithak conversation (route stays /ask); the Mirror card's guts moved from
+  `Me.jsx` to Thoughts (Me keeps account/security + a link)
 
 ## Hard rules — do not weaken these
 
 1. Retrieval must stay visibility-filtered in code (`librarian.is_visible` on
-   every hit). Never rely on prompts for privacy.
+   every hit) — including EVERY turn of a Baithak conversation (/converse
+   re-searches fresh each turn; never cache snippets across turns). Never
+   rely on prompts for privacy.
 2. Only `consent_guardian` may change visibility, and only for the author.
 3. `doer.py` must never fill credential/payment fields or click pay/send —
    `guard_fill`/`guard_click` enforce this; actions always require explicit
    human approval before completing.
 4. The spine tests (`tests/test_spine_*.py`) are the gate: if a change makes
    any of them fail, the change is wrong.
-5. Alert wording must never sound medical or diagnostic.
+5. Alert wording must never sound medical or diagnostic — same for personal
+   nudges and reflections (`agents/wording_guard.py` enforces it in code).
 
 ## Useful scripts & ops
 

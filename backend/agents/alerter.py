@@ -2,13 +2,13 @@
 audience. Nudges connect humans — the wording prompts a person to reach out
 and must never sound like medical advice or a diagnosis. Rate limited so
 family never drowns in pings."""
-import re
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
 from agents.consent_guardian import _fact_matches
 from agents.llm import complete
+from agents.wording_guard import MEDICAL_RE
 from config import settings
 from models import Alert, AlertTrigger, Fact, JournalEntry, User
 
@@ -27,12 +27,8 @@ FALLBACK_MESSAGES = {
 FALLBACK_ACTION = "Give {author} a call and see how they're doing."
 
 # CODE-LEVEL safety boundary (never prompt-only): any clinical-sounding LLM
-# wording is rejected and replaced with the deterministic template.
-MEDICAL_RE = re.compile(
-    r"\b(diagnos\w*|prescri\w*|medicat\w*|dosage|symptom\w*|clinical|disease\w*|"
-    r"treatment\w*|therap\w*|doctor should|see a doctor immediately|emergency room)\b",
-    re.I,
-)
+# wording is rejected and replaced with the deterministic template. The regex
+# lives in wording_guard so PersonalRadar/Reflector enforce the same line.
 
 
 def _day_start(now: datetime) -> datetime:

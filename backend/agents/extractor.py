@@ -50,6 +50,10 @@ SYSTEM = (
     "event (something that happened), state (how the author is doing — set "
     "structured.topic, e.g. 'health'), plan (something they intend to do), "
     "person (someone mentioned), date (a specific date — structured.date as YYYY-MM-DD). "
+    "Something UPCOMING the author mentions ('a meeting on Friday', 'exam next "
+    "week') is a plan — resolve weekday/relative words against today's date "
+    "given in the prompt and set structured.date to that YYYY-MM-DD, so the "
+    "journal can gently remind them near the day. "
     "content is one human-readable sentence in third person, in the entry's language. "
     "source_quote is the exact phrase from the entry. Extract only what is clearly "
     "there — no guesses. Usually 1-4 facts."
@@ -118,9 +122,15 @@ def _fallback(transcript: str) -> dict:
     return {"facts": facts[:5]}
 
 
-def extract_facts(transcript: str, summary: str = "") -> list[FactDraft]:
+def extract_facts(transcript: str, summary: str = "", language: str | None = None) -> list[FactDraft]:
+    from datetime import datetime
+
+    today = datetime.utcnow().strftime("%A, %Y-%m-%d")
+    # naming the language pins `content` to it — without this, extraction
+    # occasionally drifts into an unrelated language (observed once on seed)
+    lang_line = f"The entry's language is '{language}' — write every content sentence in it.\n" if language else ""
     result = complete_json(
-        f"Entry:\n{transcript}\n\nSummary:\n{summary}",
+        f"Today is {today}.\n{lang_line}Entry:\n{transcript}\n\nSummary:\n{summary}",
         system=SYSTEM,
         schema=FACTS_SCHEMA,
         fallback=lambda: _fallback(transcript),

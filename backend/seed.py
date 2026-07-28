@@ -7,8 +7,14 @@ the circle "Ghar" with four members, relationships, Deepa's gift-ideas rule,
 Mumma's knee trigger, and entries that make the app demo on first login —
 all without needing any API keys.
 """
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+
+# Windows consoles default to cp1252, which can't print the Hindi in the
+# closing summary — never let a print() undo a successful seed.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from auth import hash_password
 from config import settings
@@ -187,6 +193,42 @@ def main():
     )
     backdate(db, result.entry, result.facts, now - timedelta(hours=20))
     print("  • Aditya's private reflection (Mirror only)")
+
+    # 5) Aditya, yesterday, private — a dated plan so the Personal Radar has
+    # something to remember on first login (the founder's "important meeting"
+    # example). The plan fact is added deterministically so the demo works
+    # with or without LLM keys.
+    meeting_day = (now + timedelta(days=2)).strftime("%A")
+    result = run_capture(
+        db, users["Aditya"], circle.id,
+        transcript=(
+            f"Busy day. I have an important presentation to the client on "
+            f"{meeting_day} — I really want it to go well."
+        ),
+        language="en",
+    )
+    # keyless extraction can't resolve "Thursday" to a date, so guarantee ONE
+    # dated plan fact; with LLM keys the extractor usually already made it
+    extra_facts = []
+    if not any(
+        f.type in ("plan", "date") and (f.structured or {}).get("date")
+        for f in result.facts
+    ):
+        from models import Fact
+        radar_fact = Fact(
+            entry_id=result.entry.id,
+            author_id=users["Aditya"].id,
+            circle_id=circle.id,
+            type="plan",
+            content=f"Important client presentation on {meeting_day}",
+            structured={"date": (now + timedelta(days=2)).strftime("%Y-%m-%d")},
+            source_quote=f"I have an important presentation to the client on {meeting_day}",
+        )
+        db.add(radar_fact)
+        db.commit()
+        extra_facts = [radar_fact]
+    backdate(db, result.entry, result.facts + extra_facts, now - timedelta(days=1))
+    print("  • Aditya's dated plan (personal nudge will greet him on login)")
 
     from models import Alert
     alert_count = db.query(Alert).count()

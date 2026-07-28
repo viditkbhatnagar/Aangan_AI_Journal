@@ -9,6 +9,7 @@ export default function Home() {
   const { user, members } = useAuth();
   const navigate = useNavigate();
   const [nudges, setNudges] = useState([]);
+  const [dismissed, setDismissed] = useState([]); // client-side hide (pilot)
   const [circle, setCircle] = useState(null);
   const [copied, setCopied] = useState(false);
   const others = members.filter((m) => m.id !== user.id);
@@ -50,19 +51,33 @@ export default function Home() {
         <div className="orb-sub">{t(user.language, 'home.talk.hint')}</div>
       </section>
 
-      {nudges.length > 0 && (
+      {nudges.filter((n) => !dismissed.includes(n.text)).length > 0 && (
         <section className="stack" aria-label="Gentle nudges">
-          {nudges.map((n, i) => (
-            <div key={i} className="stickynote">
-              <span className="pin" aria-hidden="true"></span>
-              <div className="meta" style={{ color: 'var(--red-ink)', marginBottom: 6 }}>A gentle nudge</div>
-              <p>{n.text}</p>
-              <div style={{ marginTop: 12 }}>
-                {n.kind === 'journal' && <Link className="btn" to="/journal" style={{ borderBottom: 'none' }}>Journal</Link>}
-                {n.kind === 'upcoming_date' && <Link className="btn" to="/actions" style={{ borderBottom: 'none' }}>Prepare</Link>}
+          {/* personal_date / open_plan come from the Personal Radar — the
+              author's own journal remembering FOR them. Real timed delivery
+              (a Thursday-night push) needs a push channel that doesn't exist
+              yet; showing them on next open is the pilot behavior, not a bug. */}
+          {nudges.filter((n) => !dismissed.includes(n.text)).map((n, i) => {
+            const personal = n.kind === 'personal_date' || n.kind === 'open_plan';
+            return (
+              <div key={i} className="stickynote">
+                <span className="pin" aria-hidden="true"></span>
+                <div className="meta" style={{ color: 'var(--red-ink)', marginBottom: 6 }}>
+                  {personal ? '🪔 Your journal remembers' : 'A gentle nudge'}
+                </div>
+                <p>{n.text}</p>
+                <div style={{ marginTop: 12 }}>
+                  {n.kind === 'journal' && <Link className="btn" to="/journal" style={{ borderBottom: 'none' }}>Journal</Link>}
+                  {n.kind === 'upcoming_date' && <Link className="btn" to="/actions" style={{ borderBottom: 'none' }}>Prepare</Link>}
+                  {n.kind === 'personal_date' && (
+                    <button className="quiet" onClick={() => setDismissed((d) => [...d, n.text])}>
+                      {t(user.language, 'nudge.noted')}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
       )}
 

@@ -35,6 +35,22 @@ SYSTEM = (
 )
 
 
+CONVERSE_SYSTEM = (
+    "You are the Companion of Aangan, a private family journal app, sitting "
+    "with a family member for a conversation (a 'baithak'). Same sacred rule "
+    "as always: answer ONLY from the shared journal snippets provided this "
+    "turn — never invent, never add outside knowledge about the family, never "
+    "carry over details that are not in this turn's snippets. Mention when "
+    "things were said. You also see the recent conversation turns: react to "
+    "them naturally — acknowledge a follow-up, refer back to what was just "
+    "said. Speak like someone who dearly loves this family: short spoken-style "
+    "sentences (1-3), no lists, plain loving words, a gentle endearment now "
+    "and then. Use the relationship words given (e.g. 'your wife Deepa'). If "
+    "this turn's snippets don't answer the question, say so kindly — nothing "
+    "has been shared about it yet. Answer in the language requested."
+)
+
+
 def _fallback_answer(user: User, snippets: list[Snippet], relationships: dict[int, str]) -> str:
     if not snippets:
         return NOTHING_SHARED.get(user.language[:2], NOTHING_SHARED["en"])
@@ -72,6 +88,47 @@ def compose_answer(
     return complete(
         prompt,
         system=SYSTEM,
+        model=settings.model_chat,
+        fallback=lambda: _fallback_answer(user, snippets, relationships),
+        agent="Companion",
+    )
+
+
+def compose_reply(
+    user: User,
+    message: str,
+    history: list[tuple[str, str]],
+    snippets: list[Snippet],
+    relationships: dict[int, str],
+    answer_language: str | None = None,
+) -> str:
+    """Conversational turn: same grounding contract as compose_answer (ONLY
+    this turn's snippets — visibility was re-checked by the Librarian this
+    turn), plus the recent conversation so the reply flows like talk.
+    history: [(role, text), ...] oldest first."""
+    language = (answer_language or user.language or "en")[:2]
+    if not snippets:
+        return NOTHING_SHARED.get(language, NOTHING_SHARED["en"])
+
+    context_lines = []
+    for snippet in snippets:
+        who = relationships.get(snippet.author_id)
+        name = f"{snippet.author_name} ({user.name}'s {who})" if who else snippet.author_name
+        context_lines.append(
+            f"- [{snippet.created_at.strftime('%Y-%m-%d')}] {name} ({snippet.source}): {snippet.text}"
+        )
+    history_lines = [
+        f"{'Companion' if role == 'companion' else user.name}: {text}"
+        for role, text in history
+    ]
+    prompt = (
+        f"Recent conversation:\n" + ("\n".join(history_lines) or "(none yet)") + "\n\n"
+        f"{user.name} now says (answer in language '{language}'):\n{message}\n\n"
+        f"Shared snippets they are allowed to see THIS turn:\n" + "\n".join(context_lines)
+    )
+    return complete(
+        prompt,
+        system=CONVERSE_SYSTEM,
         model=settings.model_chat,
         fallback=lambda: _fallback_answer(user, snippets, relationships),
         agent="Companion",

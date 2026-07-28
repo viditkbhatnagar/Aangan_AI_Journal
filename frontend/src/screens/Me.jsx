@@ -1,27 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { t } from '../i18n';
 import { useAuth } from '../auth';
 import MfaCard from '../components/MfaCard';
-
-function MoodStrip({ series }) {
-  if (!series.length) return <p className="muted">Your moods will appear here as you journal.</p>;
-  return (
-    <div className="row" style={{ alignItems: 'flex-end', gap: '3px', minHeight: '3.5rem', overflowX: 'auto' }} aria-label="Mood over time">
-      {series.slice(-30).map((p, i) => {
-        const height = 12 + Math.round((p.score + 1) * 20);
-        const color = p.score > 0.1 ? 'var(--color-accent)' : p.score < -0.1 ? 'var(--color-rose)' : 'var(--color-line)';
-        return (
-          <div
-            key={i}
-            title={`${p.date}: ${p.summary}`}
-            style={{ width: '10px', height: `${height}px`, background: color, borderRadius: '4px 4px 0 0', flexShrink: 0 }}
-          />
-        );
-      })}
-    </div>
-  );
-}
 
 function DataControls({ onDeleted }) {
   const [confirming, setConfirming] = useState(false);
@@ -146,7 +128,6 @@ function PlusFakeDoor() {
 export default function Me() {
   const { user, members, logout } = useAuth();
   const others = members.filter((m) => m.id !== user.id);
-  const [mirror, setMirror] = useState(null);
   const [rules, setRules] = useState([]);
   const [triggers, setTriggers] = useState([]);
   const [ruleText, setRuleText] = useState('');
@@ -155,12 +136,10 @@ export default function Me() {
   const [error, setError] = useState(null);
 
   const refresh = useCallback(async () => {
-    const [m, r, t] = await Promise.all([
-      api.get('/mirror'),
+    const [r, t] = await Promise.all([
       api.get('/share-rules'),
       api.get('/alert-triggers'),
     ]);
-    setMirror(m);
     setRules(r);
     setTriggers(t);
   }, []);
@@ -213,30 +192,12 @@ export default function Me() {
 
       {error && <p className="error-text">{error}</p>}
 
+      {/* the mirror's guts moved to /thoughts — Me keeps account & security */}
       <section className="card stack">
-        <div className="card-title" style={{ marginBottom: 0 }}>
-          <h2>Your mirror</h2>
-          <span className="private-tag">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.8" /></svg>
-            Only you
-          </span>
-        </div>
-        {mirror && (
-          <>
-            <div className="row" style={{ gap: 'var(--space-4)' }}>
-              <div><strong style={{ fontSize: '1.4rem' }}>{mirror.total_entries}</strong><p className="muted">entries</p></div>
-              <div><strong style={{ fontSize: '1.4rem' }}>{mirror.streak_days}</strong><p className="muted">day streak</p></div>
-            </div>
-            <MoodStrip series={mirror.mood_series} />
-            {mirror.themes.length > 0 && (
-              <div className="row" style={{ flexWrap: 'wrap' }}>
-                {mirror.themes.map((t) => (
-                  <span key={t.name} className="pill">{t.name} · {t.count}</span>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+        <p className="muted" style={{ marginBottom: 0 }}>{t(user.language, 'me.mirror.moved')}</p>
+        <Link className="btn" to="/thoughts" style={{ borderBottom: 'none', width: 'fit-content' }}>
+          {t(user.language, 'me.mirror.link')}
+        </Link>
       </section>
 
       <section className="card stack">

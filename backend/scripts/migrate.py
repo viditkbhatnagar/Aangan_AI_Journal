@@ -14,6 +14,11 @@ Handles every state a local or docker database can be in:
 import sys
 from pathlib import Path
 
+# Windows consoles default to cp1252, which can't print the ✔ below — never
+# let a print() make a successful migration look like a failure.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
 

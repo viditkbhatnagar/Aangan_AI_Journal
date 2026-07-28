@@ -12,14 +12,16 @@ import Actions from './screens/Actions';
 import { t } from './i18n';
 import MemoryBook from './screens/MemoryBook';
 import Me from './screens/Me';
+import Thoughts from './screens/Thoughts';
 import AgentPanel from './components/AgentPanel';
 import {
-  ActionsIcon, AlertsIcon, AskIcon, GearIcon, HomeIcon, JournalIcon, MeIcon, MemoryIcon,
+  ActionsIcon, AlertsIcon, AskIcon, GearIcon, HomeIcon, JournalIcon, MeIcon, MemoryIcon, ThoughtsIcon,
 } from './icons';
 
 const NAV = [
   { to: '/', Icon: HomeIcon, key: 'nav.home' },
   { to: '/journal', Icon: JournalIcon, key: 'nav.journal' },
+  { to: '/thoughts', Icon: ThoughtsIcon, key: 'nav.thoughts' },
   { to: '/ask', Icon: AskIcon, key: 'nav.ask' },
   { to: '/alerts', Icon: AlertsIcon, key: 'nav.alerts' },
   { to: '/actions', Icon: ActionsIcon, key: 'nav.actions' },
@@ -93,6 +95,7 @@ export default function App() {
       <Routes key={activeCircleId ?? 'none'}>
         <Route path="/" element={<Home />} />
         <Route path="/journal" element={<Journal />} />
+        <Route path="/thoughts" element={<Thoughts />} />
         <Route path="/ask" element={<Ask />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/actions" element={<Actions />} />

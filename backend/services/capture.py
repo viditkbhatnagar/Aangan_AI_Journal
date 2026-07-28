@@ -127,7 +127,7 @@ def _enrich(db: Session, author: User, entry: JournalEntry) -> CaptureResult:
     # 5) facts, private by default
     activity.emit(author.id, "Extractor", "Noting the little things…")
     facts = []
-    for draft in extractor.extract_facts(transcript, summary.summary):
+    for draft in extractor.extract_facts(transcript, summary.summary, language=entry.language):
         fact = Fact(
             entry_id=entry.id,
             author_id=author.id,

@@ -8,6 +8,10 @@ export const HomeIcon = () => (
 export const JournalIcon = () => (
   <svg viewBox="0 0 24 24" {...S}><path d="M6 4h9l4 4v12H6z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M9 9h4M9 12.5h6M9 16h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
 );
+// a hand mirror with a small spark — the personal "My Thoughts" reflection
+export const ThoughtsIcon = () => (
+  <svg viewBox="0 0 24 24" {...S}><circle cx="12" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5" /><path d="M12 14.5V20M9.5 20h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M9.8 7.6c.5-1 1.4-1.6 2.4-1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
+);
 export const AskIcon = () => (
   <svg viewBox="0 0 24 24" {...S}><path d="M4 5h16v11H8l-4 3.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M12 8.4c1.6-1 3 .4 2 1.7-.5.6-1 .8-1 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><circle cx="13" cy="13.4" r=".9" fill="currentColor" /></svg>
 );

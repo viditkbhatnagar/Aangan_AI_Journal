@@ -225,6 +225,39 @@ class AskRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class Conversation(Base):
+    """A Baithak sitting: one user's multi-turn conversation with the
+    Companion. Owner-only — turns are retrievable by user_id alone, and
+    retrieval inside a turn is ALWAYS re-run through the Librarian."""
+
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    circle_id: Mapped[int] = mapped_column(ForeignKey("family_circles.id"), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    turns: Mapped[list["ConversationTurn"]] = relationship(
+        back_populates="conversation", order_by="ConversationTurn.id"
+    )
+
+
+class ConversationTurn(Base):
+    __tablename__ = "conversation_turns"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        ForeignKey("conversations.id"), nullable=False, index=True
+    )
+    role: Mapped[str] = mapped_column(String, nullable=False)  # user|companion
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    snippet_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    conversation: Mapped["Conversation"] = relationship(back_populates="turns")
+
+
 class ProductEvent(Base):
     """First-party funnel events — no third-party trackers, ever."""
 

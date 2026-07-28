@@ -6,6 +6,7 @@ __pycache__/
 
 # App data (local, private)
 backend/aangan.db
+backend/aangan.db-journal
 backend/chroma_data/
 backend/data/audio/*
 backend/data/actions/*
@@ -27,3 +28,4 @@ frontend/dist/
 # OS / editor
 .DS_Store
 *.log
+~$*

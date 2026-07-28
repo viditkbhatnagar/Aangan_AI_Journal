@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { t } from '../i18n';
@@ -277,6 +277,10 @@ export default function Journal() {
         <p className="meta" style={{ marginTop: 12, textTransform: 'none', letterSpacing: '0.03em' }}>
           Voice is transcribed by Deepgram · summaries use our AI provider ·{' '}
           <a href="/api/legal/privacy" target="_blank" rel="noreferrer">privacy</a>
+        </p>
+        {/* journaling stays scribe-mode; conversation lives in the Baithak */}
+        <p className="muted" style={{ marginTop: 6 }}>
+          <Link to="/ask">{t(lang, 'journal.baithak.hint')}</Link>
         </p>
       </section>
 
