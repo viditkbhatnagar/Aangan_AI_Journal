@@ -22,6 +22,7 @@ from db import Base, SessionLocal, engine
 from memory import store
 from models import (
     FamilyCircle,
+    JournalEntry,
     Membership,
     Relationship,
     ShareRule,
@@ -230,13 +231,202 @@ def main():
     backdate(db, result.entry, result.facts + extra_facts, now - timedelta(days=1))
     print("  • Aditya's dated plan (personal nudge will greet him on login)")
 
+    # ------------------------------------------------------------------
+    # Rich demo data — so every dashboard looks full during a live demo.
+    # Entries span ~8 weeks (mood strip, streak, themes fill in), several
+    # are shared (memory book + Ask + Baithak), and a few prepared/completed
+    # actions fill the Actions screen. Privacy spine untouched: the gift
+    # surprise stays private; shared moments are each author's own choice.
+    # ------------------------------------------------------------------
+    from agents import consent_guardian
+    from models import Action, AlertTrigger
+
+    def cap(member, days_ago, shared, lang, text):
+        res = run_capture(db, users[member], circle.id, transcript=text, language=lang)
+        if shared:
+            consent_guardian.set_visibility(
+                db, users[member], entry_id=res.entry.id, visibility=Visibility.circle,
+            )
+        backdate(db, res.entry, res.facts, now - timedelta(days=days_ago))
+        return res
+
+    # Aditya's own care trigger — his "overworked" note can gently reach Deepa,
+    # and his Me page now shows a trigger of his own.
+    db.add(AlertTrigger(
+        author_id=users["Aditya"].id, circle_id=circle.id,
+        description="If I mention I'm feeling overworked, gently let Deepa know.",
+        match={"type": "state", "topic": "wellbeing"},
+        audience=[users["Deepa"].id], severity_hint="gentle",
+    ))
+    db.commit()
+
+    RICH_ENTRIES = [
+        # member, days_ago, shared?, lang, text
+        ("Aditya", 56, True, "en", "Took Mumma to the temple this morning — she kept pointing out the marigolds. A quiet, good start to the week."),
+        ("Aditya", 40, False, "en", "Heavy week at work and I'm feeling overworked, honestly. Trying to keep Sundays for family and leave the laptop shut."),
+        ("Aditya", 33, False, "en", "Booked our family trip to Nainital for next month. I keep picturing Mumma by the lake."),
+        ("Aditya", 20, True, "en", "Abhishek got his offer letter today — the whole house was loud and happy. So proud of my little brother."),
+        ("Aditya", 12, False, "en", "Small win: made dinner for everyone tonight. Deepa laughed at my rotis but ate three of them."),
+        ("Aditya", 4, False, "en", "Picked up reading again before bed — finished a whole book this week. A small thing, but it feels like me again."),
+        ("Deepa", 49, True, "en", "The garden roses finally bloomed — the first thing I saw this morning. Called Mumma just to tell her."),
+        ("Deepa", 10, False, "en", "A tired but content kind of day. Early night, a few pages of my book, done."),
+        ("Deepa", 3, True, "en", "I've been wanting a good pair of running shoes for my morning walks in the park."),
+        ("Deepa", 2, True, "en", "My birthday is coming up next month. Honestly I keep thinking about that beautiful black dress I saw at H&M — or maybe finally some good running shoes for my walks."),
+        ("Mumma", 35, True, "hi", "आज सारा परिवार रविवार के खाने पर आया — घर भरा-भरा और खुशियों से भरा लगा।"),
+        ("Mumma", 14, False, "hi", "सुबह आँगन में तुलसी को पानी दिया और थोड़ी देर धूप में बैठी। मन शांत था।"),
+        ("Mumma", 8, True, "hi", "अभिषेक की नौकरी की खबर सुनकर दिल खुश हो गया। भगवान उसे हमेशा खुश रखे।"),
+        ("Abhishek", 42, False, "en", "The job hunt is exhausting. Trying to stay hopeful and keep applying."),
+        ("Abhishek", 20, True, "en", "Got the offer! Calling everyone tonight. Couldn't have done it without the family's patience."),
+        ("Abhishek", 7, False, "en", "First week at the new job — nervous but genuinely excited."),
+        ("Abhishek", 3, True, "en", "Fixed the old cycle in the courtyard with Aditya bhai — Mumma couldn't stop laughing at the two of us."),
+    ]
+    for member, days_ago, shared, lang, text in RICH_ENTRIES:
+        cap(member, days_ago, shared, lang, text)
+    print(f"  • {len(RICH_ENTRIES)} more entries across the family (many shared → memory book)")
+
+    # A few prepared/completed actions so the Actions screen is never empty.
+    def steps(*items):
+        return [{"icon": i, "label": lbl, "detail": d} for (i, lbl, d) in items]
+
+    def make_action(member, intent, status, plan, result, days_ago):
+        created = now - timedelta(days=days_ago)
+        db.add(Action(
+            created_by=users[member].id, intent=intent, plan=plan, status=status,
+            result=result, created_at=created,
+            completed_at=(created + timedelta(minutes=4)) if status == "completed" else None,
+        ))
+
+    make_action(
+        "Aditya", "order chocolates for Deepa", "completed",
+        {"type": "purchase", "item": "assorted chocolates", "site": "https://www.amazon.in",
+         "candidate": {"title": "Cadbury Celebrations Assorted Chocolate Gift Pack, 172.4g",
+                       "price_text": "₹145", "reason": "Fits your ₹800 budget",
+                       "url": "https://www.amazon.in/s?k=cadbury+celebrations"},
+         "trace": steps(("📝", "Received your request", "order chocolates for Deepa"),
+                        ("🧭", "Understood this as a purchase", "the wording sounds like shopping"),
+                        ("🔎", "Worked out the item", "assorted chocolates"),
+                        ("⭐", "Picked the best match", "Cadbury Celebrations — ₹145"))},
+        {"status": "ready_for_human",
+         "item": "Cadbury Celebrations Assorted Chocolate Gift Pack, 172.4g",
+         "checkout_url": "https://www.amazon.in/gp/cart/view.html",
+         "note": "The cart is ready — review the item, price and address, then pay yourself. I stop before any payment.",
+         "trace": steps(("✅", "You approved", "completing up to the safe handoff"),
+                        ("🛒", "Added it to the cart", "Cadbury Celebrations Assorted, 172.4g"),
+                        ("🛡️", "No payment or credential field was touched", "the guards stayed green"),
+                        ("✋", "Stopped at the safe handoff", "over to you to pay"))},
+        days_ago=15,
+    )
+    make_action(
+        "Aditya", "send Mumma a good-morning message", "completed",
+        {"type": "message", "channel": "whatsapp", "to": "",
+         "body": "Good morning Mumma! Hope you slept well. I'll call at lunch. ❤️",
+         "trace": steps(("📝", "Received your request", "message Mumma"),
+                        ("💬", "Draft ready", "a warm good-morning note"))},
+        {"status": "ready_for_human",
+         "body": "Good morning Mumma! Hope you slept well. I'll call at lunch. ❤️",
+         "note": "Your message is drafted — read it once and press send yourself.",
+         "trace": steps(("✅", "You approved", ""),
+                        ("🔗", "Built a ready-to-send link", "I will NOT press send — that's yours"),
+                        ("✋", "Stopped at the safe handoff", ""))},
+        days_ago=6,
+    )
+    make_action(
+        "Aditya", "send Abhishek a congratulations message", "awaiting_approval",
+        {"type": "message", "channel": "whatsapp", "to": "",
+         "body": "Abhishek!! So proud of you for the new job. Dinner's on me this weekend. 🎉",
+         "trace": steps(("📝", "Received your request", "congratulate Abhishek"),
+                        ("💬", "Draft ready", "a celebratory note"),
+                        ("⏸️", "Plan ready — waiting for your approval", "nothing runs until you approve"))},
+        None, days_ago=1,
+    )
+    make_action(
+        "Deepa", "order a book for Aditya", "completed",
+        {"type": "purchase", "item": "the alchemist paulo coelho", "site": "https://www.amazon.in",
+         "candidate": {"title": "The Alchemist by Paulo Coelho (Paperback)",
+                       "price_text": "₹199", "reason": "His favourite — a nicer copy",
+                       "url": "https://www.amazon.in/s?k=the+alchemist"},
+         "trace": steps(("📝", "Received your request", "order a book for Aditya"),
+                        ("🔎", "Worked out the item", "The Alchemist"),
+                        ("⭐", "Picked the best match", "Paperback — ₹199"))},
+        {"status": "ready_for_human",
+         "item": "The Alchemist by Paulo Coelho (Paperback)",
+         "checkout_url": "https://www.amazon.in/gp/cart/view.html",
+         "note": "The cart is ready — review and pay yourself. I stop before any payment.",
+         "trace": steps(("✅", "You approved", ""), ("🛒", "Added it to the cart", "The Alchemist"),
+                        ("✋", "Stopped at the safe handoff", ""))},
+        days_ago=9,
+    )
+    make_action(
+        "Mumma", "order laddoos for the family", "completed",
+        {"type": "purchase", "item": "besan laddoo box", "site": "https://www.amazon.in",
+         "candidate": {"title": "Haldiram's Besan Laddoo, 400g", "price_text": "₹185",
+                       "reason": "Everyone's festival favourite",
+                       "url": "https://www.amazon.in/s?k=besan+laddoo"},
+         "trace": steps(("📝", "Received your request", "order laddoos"),
+                        ("⭐", "Picked the best match", "Haldiram's — ₹185"))},
+        {"status": "ready_for_human", "item": "Haldiram's Besan Laddoo, 400g",
+         "checkout_url": "https://www.amazon.in/gp/cart/view.html",
+         "note": "The cart is ready — review and pay yourself. I stop before any payment.",
+         "trace": steps(("✅", "You approved", ""), ("🛒", "Added it to the cart", "Besan Laddoo"),
+                        ("✋", "Stopped at the safe handoff", ""))},
+        days_ago=11,
+    )
+    make_action(
+        "Abhishek", "send Mumma a thank-you message", "completed",
+        {"type": "message", "channel": "whatsapp", "to": "",
+         "body": "Mumma, I got the job! Thank you for every prayer and every cup of chai. ❤️",
+         "trace": steps(("📝", "Received your request", "message Mumma"),
+                        ("💬", "Draft ready", "a heartfelt thank-you"))},
+        {"status": "ready_for_human",
+         "body": "Mumma, I got the job! Thank you for every prayer and every cup of chai. ❤️",
+         "note": "Your message is drafted — read it once and press send yourself.",
+         "trace": steps(("✅", "You approved", ""), ("🔗", "Built a ready-to-send link", ""),
+                        ("✋", "Stopped at the safe handoff", ""))},
+        days_ago=19,
+    )
+    db.commit()
+    print("  • Prepared & completed actions seeded (all four members)")
+
+    # A couple of gentle care alerts so Deepa's and Mumma's Alerts aren't empty
+    # either. Each references a real entry (Alert requires a source).
+    from models import Alert
+
+    def make_alert(about, to, source_text, severity, message, suggested, days_ago):
+        entry = db.query(JournalEntry).filter(
+            JournalEntry.author_id == users[about].id,
+            JournalEntry.transcript.like(f"%{source_text}%"),
+        ).first()
+        if entry is None:
+            return
+        db.add(Alert(
+            source_entry_id=entry.id, author_id=users[about].id,
+            recipient_id=users[to].id, circle_id=circle.id,
+            severity=severity, message=message, suggested_action=suggested,
+            created_at=now - timedelta(days=days_ago),
+        ))
+
+    make_alert(
+        "Aditya", "Deepa", "overworked", "gentle",
+        "Aditya has seemed a little stretched at work this week — a warm word might land nicely.",
+        "Maybe ask how his big project is going.", days_ago=2,
+    )
+    make_alert(
+        "Abhishek", "Mumma", "new job", "gentle",
+        "Abhishek is settling into his new job — he would love to hear from you.",
+        "Give Abhishek a call to tell him you're proud.", days_ago=1,
+    )
+    db.commit()
+    print("  • Gentle care alerts for Deepa and Mumma")
+
     from models import Alert
     alert_count = db.query(Alert).count()
+    entry_count = db.query(JournalEntry).count()
+    action_count = db.query(Action).count()
     db.close()
 
     print(
         f"""
-Done. {len(MEMBERS)} members, {alert_count} alert(s) waiting.
+Done. {len(MEMBERS)} members · {entry_count} entries · {action_count} actions · {alert_count} alert(s) waiting.
 
 Log in at the Vite URL with any of:
   aditya@ghar.family    / {PASSWORD}
