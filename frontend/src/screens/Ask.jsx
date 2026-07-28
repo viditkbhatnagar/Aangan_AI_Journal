@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import { useAuth } from '../auth';
 import HoldToTalk from '../components/HoldToTalk';
 import UpgradeCard from '../components/UpgradeCard';
-import { onSpeakingChange, speak, speakingNow, stopSpeaking } from '../voice';
+import { onSpeakingChange, prefetchSpeech, speak, speakingNow, stopSpeaking } from '../voice';
 import { FlagIcon, Inkwell, SpeakerIcon, StopIcon } from '../icons';
 
 function ReportButton({ subjectKind, subjectId = null, context }) {
@@ -109,7 +109,12 @@ export default function Ask() {
   useEffect(() => {
     if (lastConversationId == null) return;
     api.get(`/conversations/${lastConversationId}`)
-      .then((c) => setTurns(c.turns.map((tu) => ({ ...tu, language: lang }))))
+      .then((c) => {
+        setTurns(c.turns.map((tu) => ({ ...tu, language: lang })));
+        // warm the last companion reply so Read aloud is instant on return
+        const last = [...c.turns].reverse().find((tu) => tu.role === 'companion');
+        if (last) prefetchSpeech(last.text, lang);
+      })
       .catch(() => { lastConversationId = null; setConversationId(null); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

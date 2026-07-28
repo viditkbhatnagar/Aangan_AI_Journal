@@ -122,22 +122,59 @@ function speakBrowser(text, lang = 'en', { warm = false } = {}) {
   speechSynthesis.speak(utterance);
 }
 
-// Read text aloud. Tries Deepgram Aura (warm neural voice) via the backend;
-// on any failure — no key, unsupported language, network, or blocked autoplay —
-// it falls back to the browser voice so speech never simply goes silent.
+// Cache the synthesised Aura audio by text+language, so playing the same reply
+// again is INSTANT — no second round-trip to the TTS service. In-flight
+// requests are de-duped so an auto-speak + a click only fetch once.
+const audioCache = new Map(); // key -> object URL
+const audioInflight = new Map(); // key -> Promise<url|null>
+const CACHE_MAX = 24;
+
+function ttsKey(text, lang) {
+  return `${lang}::${text}`;
+}
+
+function getAudioUrl(text, lang) {
+  const key = ttsKey(text, lang);
+  if (audioCache.has(key)) return Promise.resolve(audioCache.get(key));
+  if (audioInflight.has(key)) return audioInflight.get(key);
+  const p = api.postBlob('/speak', { text, language: lang })
+    .then((blob) => {
+      if (!blob) return null;
+      const url = URL.createObjectURL(blob);
+      audioCache.set(key, url);
+      if (audioCache.size > CACHE_MAX) {
+        const oldest = audioCache.keys().next().value;
+        URL.revokeObjectURL(audioCache.get(oldest));
+        audioCache.delete(oldest);
+      }
+      return url;
+    })
+    .finally(() => audioInflight.delete(key));
+  audioInflight.set(key, p);
+  return p;
+}
+
+// Warm the cache ahead of time (e.g. the moment a reply arrives), so pressing
+// Read aloud starts speaking with no perceptible delay.
+export function prefetchSpeech(text, lang = 'en') {
+  if (!text) return;
+  getAudioUrl(text, lang).catch(() => {});
+}
+
+// Read text aloud. Tries Deepgram Aura (warm neural voice, cached) via the
+// backend; on any failure — no key, unsupported language, network, or blocked
+// autoplay — it falls back to the browser voice so speech never goes silent.
 export async function speak(text, lang = 'en', { warm = false } = {}) {
   stopSpeaking();
   const myToken = ++speakToken;
   setSpeaking(text);
   try {
-    const blob = await api.postBlob('/speak', { text, language: lang });
+    const url = await getAudioUrl(text, lang); // instant on a cache hit
     if (myToken !== speakToken) return; // superseded or stopped while fetching
-    if (blob) {
-      const url = URL.createObjectURL(blob);
+    if (url) {
       const audio = new Audio(url);
       currentAudio = audio;
       const done = () => {
-        URL.revokeObjectURL(url);
         if (currentAudio === audio) currentAudio = null;
         if (speakingText === text) setSpeaking(null);
       };

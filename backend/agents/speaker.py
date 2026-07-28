@@ -19,6 +19,10 @@ from config import settings
 
 logger = logging.getLogger("aangan.speaker")
 
+# One reused client with keep-alive, so every synth after the first skips the
+# DNS + TCP + TLS handshake to the TTS host — noticeably faster read-aloud.
+_client = httpx.Client(timeout=30.0)
+
 _AURA_ENDPOINT = "https://api.deepgram.com/v1/speak"
 _OPENAI_TTS_ENDPOINT = "https://api.openai.com/v1/audio/speech"
 _OPENAI_TTS_MODEL = "gpt-4o-mini-tts"
@@ -39,7 +43,7 @@ def _aura(text: str) -> bytes | None:
     if not settings.deepgram_api_key:
         return None
     try:
-        response = httpx.post(
+        response = _client.post(
             _AURA_ENDPOINT,
             params={"model": settings.deepgram_tts_model, "encoding": "mp3"},
             headers={
@@ -80,7 +84,7 @@ def _openai_tts(text: str) -> bytes | None:
     if not _openai_tts_usable():
         return None
     try:
-        response = httpx.post(
+        response = _client.post(
             _OPENAI_TTS_ENDPOINT,
             headers={
                 "Authorization": f"Bearer {settings.openai_api_key}",
