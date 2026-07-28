@@ -71,6 +71,9 @@ export const NibIcon = () => (
 export const ChevronIcon = () => (
   <svg {...L} width="14" height="14"><path d="M9 6l6 6-6 6" /></svg>
 );
+export const StopIcon = () => (
+  <svg {...L}><rect x="6" y="6" width="12" height="12" rx="2.5" /></svg>
+);
 
 /* ---------- the agent cast ---------- */
 export const CompassIcon = () => (

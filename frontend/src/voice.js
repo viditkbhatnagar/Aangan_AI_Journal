@@ -69,11 +69,38 @@ function pickVoice(lang) {
   return inLang[0];
 }
 
-// The Aura audio currently playing, so we can stop it on demand.
+// ---- speaking state -------------------------------------------------------
+// currentAudio: the Aura <audio> playing right now (so we can stop it).
+// speakToken: a generation guard. Every speak() claims a token; if a newer
+//   call or a stop happens while it is still fetching, the stale call aborts
+//   instead of playing — otherwise a quick double-call (auto-speak + a click)
+//   could leave an orphaned, unstoppable audio looping underneath.
+// speakingText / listeners: let the UI show a Stop button and reflect exactly
+//   which answer is being read.
 let currentAudio = null;
+let speakToken = 0;
+let speakingText = null;
+const speakingListeners = new Set();
+
+function setSpeaking(text) {
+  speakingText = text;
+  speakingListeners.forEach((fn) => { try { fn(text); } catch { /* ignore */ } });
+}
+
+// Subscribe to speaking changes — callback gets the text being read, or null
+// when it stops. Returns an unsubscribe function.
+export function onSpeakingChange(fn) {
+  speakingListeners.add(fn);
+  return () => speakingListeners.delete(fn);
+}
+
+// The text currently being read aloud, or null when silent.
+export function speakingNow() {
+  return speakingText;
+}
 
 function speakBrowser(text, lang = 'en', { warm = false } = {}) {
-  if (typeof speechSynthesis === 'undefined') return;
+  if (typeof speechSynthesis === 'undefined') { setSpeaking(null); return; }
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
@@ -90,6 +117,8 @@ function speakBrowser(text, lang = 'en', { warm = false } = {}) {
     utterance.rate = 0.94;
     utterance.pitch = 1.06;
   }
+  utterance.onend = () => { if (speakingText === text) setSpeaking(null); };
+  utterance.onerror = () => { if (speakingText === text) setSpeaking(null); };
   speechSynthesis.speak(utterance);
 }
 
@@ -98,32 +127,46 @@ function speakBrowser(text, lang = 'en', { warm = false } = {}) {
 // it falls back to the browser voice so speech never simply goes silent.
 export async function speak(text, lang = 'en', { warm = false } = {}) {
   stopSpeaking();
+  const myToken = ++speakToken;
+  setSpeaking(text);
   try {
     const blob = await api.postBlob('/speak', { text, language: lang });
+    if (myToken !== speakToken) return; // superseded or stopped while fetching
     if (blob) {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       currentAudio = audio;
-      const cleanup = () => {
+      const done = () => {
         URL.revokeObjectURL(url);
         if (currentAudio === audio) currentAudio = null;
+        if (speakingText === text) setSpeaking(null);
       };
-      audio.onended = cleanup;
-      audio.onerror = cleanup;
-      await audio.play(); // rejects if autoplay is blocked → fall back below
+      audio.onended = done;
+      audio.onerror = done;
+      try {
+        await audio.play(); // rejects if autoplay is blocked → fall back below
+      } catch {
+        if (myToken !== speakToken) return;
+        currentAudio = null;
+        speakBrowser(text, lang, { warm });
+      }
       return;
     }
   } catch {
     /* fall through to the browser voice */
   }
+  if (myToken !== speakToken) return;
   currentAudio = null;
   speakBrowser(text, lang, { warm });
 }
 
 export function stopSpeaking() {
+  speakToken += 1; // invalidate any in-flight speak()
   if (currentAudio) {
     currentAudio.pause();
+    try { currentAudio.currentTime = 0; } catch { /* ignore */ }
     currentAudio = null;
   }
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  setSpeaking(null);
 }

@@ -1067,6 +1067,12 @@ textarea {
 .thumb-fallback { display: grid; place-items: center; color: var(--clay-ink); }
 .thumb-fallback svg { width: 34px; height: 34px; }
 
+/* Stop-speaking button — clear and reachable while audio plays */
+button.sm { padding: 0.55em 0.9em; font-size: 0.66rem; }
+.stop-speaking { color: var(--red-ink); border-color: rgba(178, 58, 46, 0.45); }
+.stop-speaking:hover { color: var(--red-ink); border-color: var(--red); background: rgba(178, 58, 46, 0.08); }
+.stop-speaking svg { width: 13px; height: 13px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

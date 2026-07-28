@@ -4,8 +4,8 @@ import { t } from '../i18n';
 import { useAuth } from '../auth';
 import HoldToTalk from '../components/HoldToTalk';
 import UpgradeCard from '../components/UpgradeCard';
-import { speak, stopSpeaking } from '../voice';
-import { FlagIcon, Inkwell, SpeakerIcon } from '../icons';
+import { onSpeakingChange, speak, speakingNow, stopSpeaking } from '../voice';
+import { FlagIcon, Inkwell, SpeakerIcon, StopIcon } from '../icons';
 
 function ReportButton({ subjectKind, subjectId = null, context }) {
   const [sent, setSent] = useState(false);
@@ -33,24 +33,21 @@ function inkLines(text) {
   return text.split(/(?<=[.!?…।])\s+/).filter(Boolean);
 }
 
+// The Read-aloud control is also the Stop button: it reflects whatever is
+// actually playing (including an auto-spoken reply), so a click always either
+// starts this answer or stops the one that's speaking — never a second copy.
 function ReadAloud({ answer, language }) {
-  const [playing, setPlaying] = useState(false);
-  async function toggle() {
-    if (playing) {
-      stopSpeaking();
-      setPlaying(false);
-      return;
-    }
-    setPlaying(true);
-    await speak(answer, language, { warm: true });
-    // the browser can't tell us exactly when the audio ends here, so relax after a while
-    setTimeout(() => setPlaying(false), Math.min(30000, answer.length * 90));
+  const [active, setActive] = useState(() => speakingNow() === answer);
+  useEffect(() => onSpeakingChange((text) => setActive(text === answer)), [answer]);
+  function toggle() {
+    if (active) stopSpeaking();
+    else speak(answer, language, { warm: true });
   }
   return (
-    <button className={`readaloud ${playing ? 'on' : ''}`} aria-pressed={playing} onClick={toggle}>
-      <SpeakerIcon />
+    <button className={`readaloud ${active ? 'on' : ''}`} aria-pressed={active} onClick={toggle}>
+      {active ? <StopIcon /> : <SpeakerIcon />}
       <span className="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      {playing ? 'Reading…' : 'Read aloud'}
+      {active ? 'Stop' : 'Read aloud'}
     </button>
   );
 }
@@ -99,7 +96,14 @@ export default function Ask() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [capMessage, setCapMessage] = useState(null);
+  const [speaking, setSpeaking] = useState(false);
   const endRef = useRef(null);
+
+  // reflect whether anything is being read aloud, so a Stop button appears
+  useEffect(() => onSpeakingChange((text) => setSpeaking(text != null)), []);
+
+  // stop any speech when leaving the Baithak
+  useEffect(() => () => stopSpeaking(), []);
 
   // returning to the baithak mid-session: pick the thread back up
   useEffect(() => {
@@ -209,8 +213,10 @@ export default function Ask() {
         <div className="row between" style={{ marginTop: 12, flexWrap: 'wrap' }}>
           <HoldToTalk onRecorded={onRecorded} disabled={busy} label="Talk" />
           <span className="row" style={{ width: 'auto' }}>
-            {turns.length > 0 && (
-              <button className="quiet" onClick={stopSpeaking}>Stop speaking</button>
+            {speaking && (
+              <button className="ghost sm stop-speaking" onClick={stopSpeaking}>
+                <StopIcon /> Stop speaking
+              </button>
             )}
             <button className="quiet" onClick={newConversation}>{t(lang, 'ask.new')}</button>
           </span>
