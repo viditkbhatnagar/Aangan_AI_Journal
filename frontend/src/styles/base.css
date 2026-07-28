@@ -1052,6 +1052,21 @@ textarea {
 
 .talk-frame { margin: var(--space-3) auto; text-align: center; }
 
+/* ---------- inline line-icons ---------- */
+.iconline { display: inline-flex; align-items: center; gap: 0.5em; }
+.iconline svg { flex: 0 0 auto; width: 1.05em; height: 1.05em; }
+.muted svg { width: 1.05em; height: 1.05em; vertical-align: -0.18em; }
+.reason svg { width: 1em; height: 1em; color: var(--amber-ink); vertical-align: -0.15em; }
+.chat-thinking svg { width: 1.05em; height: 1.05em; vertical-align: -0.18em; margin-right: 0.3em; }
+.trace-summary svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.compose-cap svg { width: 15px; height: 15px; }
+.readaloud svg { width: 14px; height: 14px; }
+.trace-icon svg { width: 16px; height: 16px; }
+.agent-event-icon svg { width: 18px; height: 18px; }
+.empty-state .big svg { display: inline-block; width: 2.2rem; height: 2.2rem; }
+.thumb-fallback { display: grid; place-items: center; color: var(--clay-ink); }
+.thumb-fallback svg { width: 34px; height: 34px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -3,15 +3,17 @@ import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { t } from '../i18n';
-import { TickIcon } from '../icons';
+import {
+  CartIcon, EnvelopeIcon, FlaskIcon, GiftIcon, PhoneIcon, SearchIcon, StarIcon, TickIcon, TraceGlyph,
+} from '../icons';
 
 function PlanDetails({ plan }) {
   if (!plan) return null;
   if (plan.type === 'message') {
-    return <p className="muted">✉️ To {plan.to || 'them'}: “{plan.body}”</p>;
+    return <p className="muted"><EnvelopeIcon /> To {plan.to || 'them'}: “{plan.body}”</p>;
   }
   if (plan.type === 'call') {
-    return <p className="muted">📞 {plan.to || 'number to confirm'} — {plan.note}</p>;
+    return <p className="muted"><PhoneIcon /> {plan.to || 'number to confirm'} — {plan.note}</p>;
   }
   return null;
 }
@@ -39,13 +41,13 @@ function Receipt({ action, busy, stamping, onApprove, onCancel }) {
       {candidate ? (
         <div className="prod-main">
           <div className="prod-thumb" aria-hidden="true">
-            {candidate.image ? <img src={candidate.image} alt="" /> : <span style={{ fontSize: '1.6rem' }}>🎁</span>}
+            {candidate.image ? <img src={candidate.image} alt="" /> : <span className="thumb-fallback"><GiftIcon /></span>}
           </div>
           <div className="prod-body">
             <h3>{candidate.title}</h3>
             {candidate.reason && (
               <div className="prod-meta">
-                <span className="reason"><span aria-hidden="true">⭐</span> {candidate.reason}</span>
+                <span className="reason"><StarIcon /> {candidate.reason}</span>
               </div>
             )}
             <div className="meta store-meta">
@@ -95,13 +97,13 @@ function Trace({ plan, result, open = false }) {
   return (
     <details className="trace" open={open}>
       <summary className="trace-summary">
-        🔬 Behind the scenes — the doer's ledger
+        <FlaskIcon /> Behind the scenes — the doer’s ledger
         <span className="trace-count">{steps.length} steps</span>
       </summary>
       <ol className="trace-list">
         {steps.map((s, i) => (
           <li key={i} className="trace-step" style={{ '--i': i }}>
-            <span className="trace-icon" aria-hidden="true">{s.icon || '•'}</span>
+            <span className="trace-icon" aria-hidden="true"><TraceGlyph emoji={s.icon} /></span>
             <div className="trace-body">
               <strong>{s.label}</strong>
               {s.detail && <div className="trace-detail">{s.detail}</div>}
@@ -119,14 +121,14 @@ function ResultDetails({ result }) {
   return (
     <div className="handoff" style={{ padding: '14px 6px 4px', textAlign: 'left' }}>
       <p>{result.note}</p>
-      {result.item && <p className="muted" style={{ marginTop: 6 }}>🛒 {result.item}</p>}
+      {result.item && <p className="muted iconline" style={{ marginTop: 6 }}><CartIcon /> {result.item}</p>}
       {result.body && <p className="muted" style={{ marginTop: 6, fontStyle: 'italic' }}>“{result.body}”</p>}
       {url && (
         <div style={{ marginTop: 12 }}>
           <a className="btn" href={url} target="_blank" rel="noreferrer" style={{ borderBottom: 'none' }}>
             {result.status === 'ready_for_human' ? 'Open and finish it yourself' : 'Open the shop'}
           </a>
-          <span className="safe-stamp" style={{ marginLeft: 12 }}>Safe handoff ✋</span>
+          <span className="safe-stamp" style={{ marginLeft: 12 }}>Safe handoff</span>
         </div>
       )}
     </div>
@@ -166,7 +168,7 @@ function ChatCard({ action, onReply, thinking, autofocus }) {
         {thinking && (
           <div className="chat-bubble chat-agent chat-thinking">
             <span className="who">The doer</span>
-            🔎 Looking for the best options…
+            <SearchIcon /> Looking for the best options…
           </div>
         )}
       </div>
@@ -302,7 +304,7 @@ export default function Actions() {
 
       {chatting.length === 0 && pending.length === 0 && done.length === 0 && (
         <div className="empty-state">
-          <span className="big" aria-hidden="true">🎁</span>
+          <span className="big" aria-hidden="true"><GiftIcon /></span>
           Nothing waiting — ask me to prepare something kind.
         </div>
       )}

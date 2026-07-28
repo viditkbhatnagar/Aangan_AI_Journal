@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api';
+import { LampIcon } from '../icons';
 
 // Shown when a free-plan cap is reached (HTTP 402). One gentle card — never a
 // wall of upsells.
@@ -13,7 +14,7 @@ export default function UpgradeCard({ message, onDismiss }) {
 
   return (
     <section className="card stack" style={{ borderColor: 'var(--color-accent)' }} role="status">
-      <p>🪔 {message}</p>
+      <p className="iconline"><LampIcon /> {message}</p>
       {joined ? (
         <p className="muted">{joined}</p>
       ) : (

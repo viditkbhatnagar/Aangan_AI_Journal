@@ -63,7 +63,7 @@ export default function Home() {
               <div key={i} className="stickynote">
                 <span className="pin" aria-hidden="true"></span>
                 <div className="meta" style={{ color: 'var(--red-ink)', marginBottom: 6 }}>
-                  {personal ? '🪔 Your journal remembers' : 'A gentle nudge'}
+                  {personal ? 'Your journal remembers' : 'A gentle nudge'}
                 </div>
                 <p>{n.text}</p>
                 <div style={{ marginTop: 12 }}>

@@ -52,15 +52,15 @@ approve and finish.
 
 | | Feature | |
 |---|---|---|
-| 🎙️ | **Voice journal** | hold-to-talk (Deepgram) or type; entries are private the instant they're spoken |
-| 🪔 | **The Companion** | one warm face that answers only from shared memories, grounded in real snippets |
-| 🫖 | **Baithak** | a multi-turn conversation with the Companion, remembered across turns |
-| 🧠 | **My Thoughts + Personal Radar** | your own open loops, plans and gentle self-nudges — visible only to you |
-| 🔔 | **Care alerts** | author-set triggers ("tell my sons if I mention my knee") — warm, never medical |
-| 🎁 | **Conversational Doer** | clarifies, finds the right product on Amazon, and stops at the cart for you to pay |
-| 📸 | **Memory book** | the moments the family *chose* to share, kept together |
-| 🗣️ | **Bilingual** | English + हिन्दी throughout — content, replies, and the interface |
-| 🔐 | **Real auth** | JWT in memory only, optional TOTP two-factor, multi-circle membership |
+| <img src="docs/icons/mic.svg" width="20" alt=""> | **Voice journal** | hold-to-talk (Deepgram) or type; entries are private the instant they're spoken |
+| <img src="docs/icons/lamp.svg" width="20" alt=""> | **The Companion** | one warm face that answers only from shared memories, grounded in real snippets |
+| <img src="docs/icons/teapot.svg" width="20" alt=""> | **Baithak** | a multi-turn conversation with the Companion, remembered across turns |
+| <img src="docs/icons/thoughts.svg" width="20" alt=""> | **My Thoughts + Personal Radar** | your own open loops, plans and gentle self-nudges — visible only to you |
+| <img src="docs/icons/bell.svg" width="20" alt=""> | **Care alerts** | author-set triggers ("tell my sons if I mention my knee") — warm, never medical |
+| <img src="docs/icons/gift.svg" width="20" alt=""> | **Conversational Doer** | clarifies, finds the right product on Amazon, and stops at the cart for you to pay |
+| <img src="docs/icons/camera.svg" width="20" alt=""> | **Memory book** | the moments the family *chose* to share, kept together |
+| <img src="docs/icons/globe.svg" width="20" alt=""> | **Bilingual** | English + हिन्दी throughout — content, replies, and the interface |
+| <img src="docs/icons/lock.svg" width="20" alt=""> | **Real auth** | JWT in memory only, optional TOTP two-factor, multi-circle membership |
 
 ## System architecture
 
@@ -70,60 +70,60 @@ enforces who-can-see-what.
 
 ```mermaid
 flowchart TB
-    subgraph FE["🖥️  Frontend — React + Vite  ·  JWT kept in memory only"]
-        S["8 screens<br/>Home · Journal · Ask · Alerts<br/>Actions · Memory · Thoughts · Me"]
-    end
+ subgraph FE["Frontend — React + Vite · JWT kept in memory only"]
+ S["8 screens<br/>Home · Journal · Ask · Alerts<br/>Actions · Memory · Thoughts · Me"]
+ end
 
-    subgraph BE["⚙️  FastAPI  ·  rate-limited  ·  JWT + optional TOTP MFA"]
-        RT["17 route modules<br/>/entries · /ask · /converse · /actions<br/>/alerts · /thoughts · /keepsake · /speak"]
-    end
+ subgraph BE["FastAPI · rate-limited · JWT + optional TOTP MFA"]
+ RT["17 route modules<br/>/entries · /ask · /converse · /actions<br/>/alerts · /thoughts · /keepsake · /speak"]
+ end
 
-    subgraph AG["🧠  Agent layer — one plain-Python module each"]
-        COND["🧭 Conductor"]
-        LIB["🔒 Librarian — the privacy spine"]
-        CG["🛡️ Consent Guardian"]
-        COMP["🪔 Companion / Baithak"]
-        DOER["🎁 Doer — human-approval gate"]
-        MORE["Transcriber · Summarizer · Extractor<br/>Alerter · Personal Radar · Reflector<br/>Speaker (Aura) · Interpreter · Prompter"]
-    end
+ subgraph AG["Agent layer — one plain-Python module each"]
+ COND["Conductor"]
+ LIB["Librarian — the privacy spine"]
+ CG["Consent Guardian"]
+ COMP["Companion / Baithak"]
+ DOER["Doer — human-approval gate"]
+ MORE["Transcriber · Summarizer · Extractor<br/>Alerter · Personal Radar · Reflector<br/>Speaker (Aura) · Interpreter · Prompter"]
+ end
 
-    subgraph ST["🗄️  Local stores — on your machine"]
-        DB[("SQLite<br/>relational source of truth")]
-        VS[("ChromaDB + local MiniLM<br/>multilingual embeddings")]
-    end
+ subgraph ST["Local stores — on your machine"]
+ DB[("SQLite<br/>relational source of truth")]
+ VS[("ChromaDB + local MiniLM<br/>multilingual embeddings")]
+ end
 
-    subgraph EX["☁️  Optional providers — only what the asker may see ever leaves"]
-        DG["Deepgram<br/>speech-to-text + Aura TTS"]
-        AI["OpenAI · OpenRouter · Anthropic<br/>deterministic fallback if absent"]
-    end
+ subgraph EX["Optional providers — only what the asker may see ever leaves"]
+ DG["Deepgram<br/>speech-to-text + Aura TTS"]
+ AI["OpenAI · OpenRouter · Anthropic<br/>deterministic fallback if absent"]
+ end
 
-    S -->|"/api → :8000"| RT
-    RT --> COND
-    RT --> CG
-    RT --> DOER
-    RT --> MORE
-    COND --> LIB
-    LIB --> COMP
-    LIB --> DB
-    LIB --> VS
-    CG --> DB
-    COMP --> AI
-    MORE --> DG
-    MORE --> AI
-    DOER --> AI
+ S -->|"/api → :8000"| RT
+ RT --> COND
+ RT --> CG
+ RT --> DOER
+ RT --> MORE
+ COND --> LIB
+ LIB --> COMP
+ LIB --> DB
+ LIB --> VS
+ CG --> DB
+ COMP --> AI
+ MORE --> DG
+ MORE --> AI
+ DOER --> AI
 
-    classDef fe fill:#FBF4E7,stroke:#C9B58E,color:#22303a;
-    classDef be fill:#EFE5D2,stroke:#8E2C22,color:#22303a;
-    classDef ag fill:#F4ECDD,stroke:#3E6E70,color:#22303a;
-    classDef spine fill:#B23A2E,stroke:#8E2C22,color:#FBF3E6;
-    classDef st fill:#EAF0EA,stroke:#565633,color:#22303a;
-    classDef ex fill:#E9EEF0,stroke:#3E6E70,color:#22303a;
-    class S fe;
-    class RT be;
-    class COND,CG,COMP,DOER,MORE ag;
-    class LIB spine;
-    class DB,VS st;
-    class DG,AI ex;
+ classDef fe fill:#FBF4E7,stroke:#C9B58E,color:#22303a;
+ classDef be fill:#EFE5D2,stroke:#8E2C22,color:#22303a;
+ classDef ag fill:#F4ECDD,stroke:#3E6E70,color:#22303a;
+ classDef spine fill:#B23A2E,stroke:#8E2C22,color:#FBF3E6;
+ classDef st fill:#EAF0EA,stroke:#565633,color:#22303a;
+ classDef ex fill:#E9EEF0,stroke:#3E6E70,color:#22303a;
+ class S fe;
+ class RT be;
+ class COND,CG,COMP,DOER,MORE ag;
+ class LIB spine;
+ class DB,VS st;
+ class DG,AI ex;
 ```
 
 ## The privacy spine
@@ -135,20 +135,20 @@ private entry can't leak even with corrupted vector metadata.
 
 ```mermaid
 flowchart LR
-    Q["❓ A member asks a question"] --> COND["🧭 Conductor"]
-    COND --> LIB["🔒 Librarian"]
-    LIB --> E1["1 · Embed the question<br/>locally, multilingual"]
-    E1 --> E2["2 · Vector search in Chroma<br/>scoped to the asker's circle"]
-    E2 --> E3{"3 · For EVERY hit, re-check the<br/>LIVE SQLite row's visibility<br/>against THIS asker"}
-    E3 -->|"visible to the asker"| KEEP["✅ keep the snippet"]
-    E3 -->|"private · not shared with them"| DROP["🗑️ drop — it never reaches a prompt"]
-    KEEP --> COMP["🪔 Companion answers<br/>ONLY from the kept snippets"]
-    COMP --> A["💬 Grounded answer + 🔊 spoken reply"]
+ Q["A member asks a question"] --> COND["Conductor"]
+ COND --> LIB["Librarian"]
+ LIB --> E1["1 · Embed the question<br/>locally, multilingual"]
+ E1 --> E2["2 · Vector search in Chroma<br/>scoped to the asker's circle"]
+ E2 --> E3{"3 · For EVERY hit, re-check the<br/>LIVE SQLite row's visibility<br/>against THIS asker"}
+ E3 -->|"visible to the asker"| KEEP["keep the snippet"]
+ E3 -->|"private · not shared with them"| DROP["drop — it never reaches a prompt"]
+ KEEP --> COMP["Companion answers<br/>ONLY from the kept snippets"]
+ COMP --> A["Grounded answer + spoken reply"]
 
-    classDef spine fill:#B23A2E,stroke:#8E2C22,color:#FBF3E6;
-    classDef drop fill:#EFE5D2,stroke:#8E2C22,color:#8E2C22;
-    class LIB,E3 spine;
-    class DROP drop;
+ classDef spine fill:#B23A2E,stroke:#8E2C22,color:#FBF3E6;
+ classDef drop fill:#EFE5D2,stroke:#8E2C22,color:#8E2C22;
+ class LIB,E3 spine;
+ class DROP drop;
 ```
 
 ## The capture pipeline
@@ -160,46 +160,46 @@ default, or in a background task when `ASYNC_CAPTURE=true` (the UI polls
 
 ```mermaid
 flowchart LR
-    V["🎙️ voice / typed entry"] --> T["Transcriber<br/>Deepgram → text"]
-    T --> SV["saved PRIVATE<br/>status: enriching"]
-    SV --> SUM["✍️ Summarizer"]
-    SUM --> EX["🔎 Extractor<br/>facts · private by default"]
-    EX --> CR["🛡️ Consent Guardian<br/>apply the author's OWN rules"]
-    CR --> IDX["📚 Librarian<br/>index with visibility tags"]
-    IDX --> AL["🔔 Alerter<br/>author-set care triggers"]
-    AL --> DO{"a command? e.g.<br/>'order flowers'"}
-    DO -->|yes| DR["🎁 Doer drafts an Action<br/>awaiting your approval"]
-    DO -->|no| DONE["ready ✓"]
+ V["voice / typed entry"] --> T["Transcriber<br/>Deepgram → text"]
+ T --> SV["saved PRIVATE<br/>status: enriching"]
+ SV --> SUM["Summarizer"]
+ SUM --> EX["Extractor<br/>facts · private by default"]
+ EX --> CR["Consent Guardian<br/>apply the author's OWN rules"]
+ CR --> IDX["Librarian<br/>index with visibility tags"]
+ IDX --> AL["Alerter<br/>author-set care triggers"]
+ AL --> DO{"a command? e.g.<br/>'order flowers'"}
+ DO -->|yes| DR["Doer drafts an Action<br/>awaiting your approval"]
+ DO -->|no| DONE["ready "]
 
-    classDef step fill:#F4ECDD,stroke:#3E6E70,color:#22303a;
-    classDef save fill:#EFE5D2,stroke:#8E2C22,color:#22303a;
-    class T,SUM,EX,CR,IDX,AL step;
-    class SV,DR save;
+ classDef step fill:#F4ECDD,stroke:#3E6E70,color:#22303a;
+ classDef save fill:#EFE5D2,stroke:#8E2C22,color:#22303a;
+ class T,SUM,EX,CR,IDX,AL step;
+ class SV,DR save;
 ```
 
 ## Asking the Companion
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor U as Family member
-    participant API as FastAPI (ask · baithak)
-    participant C as 🧭 Conductor
-    participant L as 🔒 Librarian
-    participant DB as SQLite + Chroma
-    participant K as 🪔 Companion
-    participant TTS as Deepgram Aura
+ autonumber
+ actor U as Family member
+ participant API as FastAPI (ask · baithak)
+ participant C as Conductor
+ participant L as Librarian
+ participant DB as SQLite + Chroma
+ participant K as Companion
+ participant TTS as Deepgram Aura
 
-    U->>API: "What would Deepa want for her birthday?"
-    API->>C: route the ask
-    C->>L: retrieve relevant memories
-    L->>DB: vector search + per-row visibility re-check
-    DB-->>L: only snippets the asker may see
-    L-->>C: safe snippets (no private content)
-    C->>K: compose a warm answer from these
-    K-->>API: grounded answer + sources
-    API->>TTS: speak it — Aura voice "Helena"
-    TTS-->>U: 💬 text + 🔊 voice
+ U->>API: "What would Deepa want for her birthday?"
+ API->>C: route the ask
+ C->>L: retrieve relevant memories
+ L->>DB: vector search + per-row visibility re-check
+ DB-->>L: only snippets the asker may see
+ L-->>C: safe snippets (no private content)
+ C->>K: compose a warm answer from these
+ K-->>API: grounded answer + sources
+ API->>TTS: speak it — Aura voice "Helena"
+ TTS-->>U: text + voice
 ```
 
 ## The conversational Doer
@@ -211,22 +211,22 @@ sends" promise real.
 
 ```mermaid
 flowchart TD
-    I["🗣️ 'order chocolates for Deepa'"] --> CLR["💬 Clarify<br/>kind? budget? — chat until sure"]
-    CLR --> SRCH["🔍 Search Amazon.in live<br/>rank with the LLM · filter out accessories"]
-    SRCH --> BEST["⭐ Recommend the best in-budget match<br/>+ a shortlist"]
-    BEST --> APP{"🖋️ Human approval<br/>stamp to approve"}
-    APP -->|cancel| STOP["nothing happens"]
-    APP -->|approve| CART["🛒 add THAT item to the cart"]
-    CART --> HAND["✋ safe hand-off<br/>cart ready — YOU review and pay"]
-    GUARD["🛡️ guard_fill / guard_click<br/>refuse card · CVV · password<br/>and any pay / place-order button"] -. enforces .-> CART
-    GUARD -. enforces .-> HAND
+ I["'order chocolates for Deepa'"] --> CLR["Clarify<br/>kind? budget? — chat until sure"]
+ CLR --> SRCH["Search Amazon.in live<br/>rank with the LLM · filter out accessories"]
+ SRCH --> BEST["Recommend the best in-budget match<br/>+ a shortlist"]
+ BEST --> APP{"Human approval<br/>stamp to approve"}
+ APP -->|cancel| STOP["nothing happens"]
+ APP -->|approve| CART["add THAT item to the cart"]
+ CART --> HAND["safe hand-off<br/>cart ready — YOU review and pay"]
+ GUARD["guard_fill / guard_click<br/>refuse card · CVV · password<br/>and any pay / place-order button"] -. enforces .-> CART
+ GUARD -. enforces .-> HAND
 
-    classDef doer fill:#F4ECDD,stroke:#3E6E70,color:#22303a;
-    classDef guard fill:#B23A2E,stroke:#8E2C22,color:#FBF3E6;
-    classDef stop fill:#EFE5D2,stroke:#8E2C22,color:#22303a;
-    class I,CLR,SRCH,BEST,CART,HAND doer;
-    class GUARD guard;
-    class STOP stop;
+ classDef doer fill:#F4ECDD,stroke:#3E6E70,color:#22303a;
+ classDef guard fill:#B23A2E,stroke:#8E2C22,color:#FBF3E6;
+ classDef stop fill:#EFE5D2,stroke:#8E2C22,color:#22303a;
+ class I,CLR,SRCH,BEST,CART,HAND doer;
+ class GUARD guard;
+ class STOP stop;
 ```
 
 ## The agent cast
@@ -236,21 +236,21 @@ about.
 
 | Agent | Role |
 |---|---|
-| 🧭 **Conductor** | routes every ask through the agents below |
-| 🔒 **Librarian** | **all** retrieval; enforces visibility on both stores, row by row |
-| 🛡️ **Consent Guardian** | the only code path that moves content private → shared |
-| 🪔 **Companion** | the one warm face — answers only from returned snippets |
-| 🎙️ **Transcriber** | Deepgram speech-to-text (graceful without a key) |
-| ✍️ **Summarizer** / 🔎 **Extractor** | summaries, snippets, and private-by-default facts |
-| 🔔 **Alerter** | author-set triggers, severity, daily rate limits |
-| 🎁 **Doer** | Playwright actions with the human-approval gate |
-| 📡 **Personal Radar** / 🪞 **Reflector** | your own open loops and gentle self-nudges |
-| 🔊 **Speaker** | Deepgram Aura text-to-speech (warm neural voice) |
-| 🌐 **Interpreter** | Hindi ⇄ English bridge |
-| 🌱 **Prompter** / **Relationship Radar** | gentle nudges, never pushy |
-| 📖 **Keepsake** / 🪞 **Mirror** | shared memory book / private reflection |
-| ✅ **Wording Guard** | keeps alert wording warm — never medical or diagnostic |
-| 🔗 **LLM** | provider chain OpenAI/OpenRouter → Anthropic → deterministic fallback |
+| <img src="docs/icons/compass.svg" width="20" alt=""> **Conductor** | routes every ask through the agents below |
+| <img src="docs/icons/book.svg" width="20" alt=""> **Librarian** | **all** retrieval; enforces visibility on both stores, row by row |
+| <img src="docs/icons/shield.svg" width="20" alt=""> **Consent Guardian** | the only code path that moves content private → shared |
+| <img src="docs/icons/lamp.svg" width="20" alt=""> **Companion** | the one warm face — answers only from returned snippets |
+| <img src="docs/icons/mic.svg" width="20" alt=""> **Transcriber** | Deepgram speech-to-text (graceful without a key) |
+| <img src="docs/icons/feather.svg" width="20" alt=""> **Summarizer** / <img src="docs/icons/search.svg" width="20" alt=""> **Extractor** | summaries, snippets, and private-by-default facts |
+| <img src="docs/icons/bell.svg" width="20" alt=""> **Alerter** | author-set triggers, severity, daily rate limits |
+| <img src="docs/icons/gift.svg" width="20" alt=""> **Doer** | Playwright actions with the human-approval gate |
+| <img src="docs/icons/radar.svg" width="20" alt=""> **Personal Radar** / <img src="docs/icons/mirror.svg" width="20" alt=""> **Reflector** | your own open loops and gentle self-nudges |
+| <img src="docs/icons/speaker.svg" width="20" alt=""> **Speaker** | Deepgram Aura text-to-speech (warm neural voice) |
+| <img src="docs/icons/globe.svg" width="20" alt=""> **Interpreter** | Hindi ⇄ English bridge |
+| <img src="docs/icons/sprout.svg" width="20" alt=""> **Prompter** / **Relationship Radar** | gentle nudges, never pushy |
+| <img src="docs/icons/book.svg" width="20" alt=""> **Keepsake** / <img src="docs/icons/mirror.svg" width="20" alt=""> **Mirror** | shared memory book / private reflection |
+| <img src="docs/icons/shieldcheck.svg" width="20" alt=""> **Wording Guard** | keeps alert wording warm — never medical or diagnostic |
+|  **LLM** | provider chain OpenAI/OpenRouter → Anthropic → deterministic fallback |
 
 ## The eight screens
 

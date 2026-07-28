@@ -28,7 +28,7 @@ export default function ResetPassword() {
         <p className="muted">Choose something only you would know.</p>
       </div>
       {done ? (
-        <p className="card" style={{ textAlign: 'center' }}>All set — taking you home. 🪔</p>
+        <p className="card" style={{ textAlign: 'center' }}>All set — taking you home.</p>
       ) : (
         <form className="card stack" onSubmit={submit}>
           <div>

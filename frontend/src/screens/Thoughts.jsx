@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useAuth } from '../auth';
 import { t } from '../i18n';
 import MoodStrip from '../components/MoodStrip';
-import { Inkwell, LockIcon } from '../icons';
+import { Inkwell, LampIcon, LockIcon, MirrorIcon } from '../icons';
 
 // split prose into "ink lines" (sentences) that write themselves in
 function inkLines(text) {
@@ -43,7 +43,7 @@ export default function Thoughts() {
       {personalNudges.filter((n) => !dismissed.includes(n.text)).map((n, i) => (
         <div key={i} className="stickynote">
           <span className="pin" aria-hidden="true"></span>
-          <div className="meta" style={{ color: 'var(--red-ink)', marginBottom: 6 }}>🪔 Your journal remembers</div>
+          <div className="meta" style={{ color: 'var(--red-ink)', marginBottom: 6 }} className="iconline"><LampIcon /> Your journal remembers</div>
           <p>{n.text}</p>
           {n.kind === 'personal_date' && (
             <div style={{ marginTop: 12 }}>
@@ -57,7 +57,7 @@ export default function Thoughts() {
 
       {empty ? (
         <div className="empty-state">
-          <span className="big" aria-hidden="true">🪞</span>
+          <span className="big" aria-hidden="true"><MirrorIcon /></span>
           {t(lang, 'thoughts.empty')}
         </div>
       ) : (

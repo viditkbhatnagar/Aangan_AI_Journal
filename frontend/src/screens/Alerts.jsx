@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { t } from '../i18n';
+import { FlagIcon, LeafIcon } from '../icons';
 
 export default function Alerts() {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export default function Alerts() {
 
       {fresh.length === 0 && (
         <div className="empty-state">
-          <span className="big" aria-hidden="true">🌿</span>
+          <span className="big" aria-hidden="true"><LeafIcon /></span>
           {t(lang, 'alerts.empty')}
         </div>
       )}
@@ -77,7 +78,7 @@ export default function Alerts() {
                   setStatus(alert, 'seen');
                 }}
               >
-                🚩
+                <FlagIcon />
               </button>
             </div>
           </div>

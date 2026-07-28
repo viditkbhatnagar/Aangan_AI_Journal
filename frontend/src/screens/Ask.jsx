@@ -5,11 +5,11 @@ import { useAuth } from '../auth';
 import HoldToTalk from '../components/HoldToTalk';
 import UpgradeCard from '../components/UpgradeCard';
 import { speak, stopSpeaking } from '../voice';
-import { Inkwell } from '../icons';
+import { FlagIcon, Inkwell, SpeakerIcon } from '../icons';
 
 function ReportButton({ subjectKind, subjectId = null, context }) {
   const [sent, setSent] = useState(false);
-  if (sent) return <span className="meta">noted 🙏</span>;
+  if (sent) return <span className="meta">noted</span>;
   return (
     <button
       className="quiet"
@@ -23,7 +23,7 @@ function ReportButton({ subjectKind, subjectId = null, context }) {
         setSent(true);
       }}
     >
-      🚩
+      <FlagIcon />
     </button>
   );
 }
@@ -48,7 +48,7 @@ function ReadAloud({ answer, language }) {
   }
   return (
     <button className={`readaloud ${playing ? 'on' : ''}`} aria-pressed={playing} onClick={toggle}>
-      <span aria-hidden="true">🔊</span>
+      <SpeakerIcon />
       <span className="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       {playing ? 'Reading…' : 'Read aloud'}
     </button>
@@ -148,7 +148,7 @@ export default function Ask() {
     const formData = new FormData();
     formData.append('audio', blob, 'question.webm');
     if (conversationId != null) formData.append('conversation_id', String(conversationId));
-    sendTurn(formData, '🎙 (spoken)');
+    sendTurn(formData, '(spoken question)');
   }
 
   function newConversation() {

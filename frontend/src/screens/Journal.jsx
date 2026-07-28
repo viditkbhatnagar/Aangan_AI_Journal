@@ -6,13 +6,14 @@ import { t } from '../i18n';
 import HoldToTalk from '../components/HoldToTalk';
 import ShareControls from '../components/ShareControls';
 import UpgradeCard from '../components/UpgradeCard';
+import { FeatherIcon, LampIcon, NibIcon, PencilIcon, TrashIcon } from '../icons';
 
 function SharePrompts({ capture, onDismiss, onShared }) {
   if (!capture?.share_suggestions?.length && !capture?.applied_rules?.length) return null;
   return (
     <section className="card stack" style={{ borderColor: 'var(--amber)' }}>
       {capture.applied_rules.map((rule) => (
-        <p key={rule} className="muted">✨ Shared automatically because of your rule: “{rule}”.</p>
+        <p key={rule} className="muted">Shared automatically because of your rule: “{rule}”.</p>
       ))}
       {capture.share_suggestions.map((s, i) => (
         <div key={i} className="stack">
@@ -58,8 +59,8 @@ function FactCard({ entry, fact, onChanged }) {
       <div className="row between" style={{ marginBottom: 2 }}>
         <span className="k">{fact.type}</span>
         <span className="row" style={{ width: 'auto', gap: '0.2rem' }}>
-          <button className="quiet" onClick={() => setEditing(!editing)} title="Correct this note">✏️</button>
-          <button className="quiet" onClick={remove} title="Remove this note">🗑</button>
+          <button className="quiet" onClick={() => setEditing(!editing)} title="Correct this note"><PencilIcon /></button>
+          <button className="quiet" onClick={remove} title="Remove this note"><TrashIcon /></button>
         </span>
       </div>
       {editing ? (
@@ -106,7 +107,7 @@ function EntryCard({ entry, onChanged }) {
           <div className="env-inner">
             <p className="prose">{entry.transcript}</p>
             {entry.summary && entry.summary !== entry.transcript && (
-              <p className="muted" style={{ marginTop: 10, fontStyle: 'italic' }}>✍️ {entry.summary}</p>
+              <p className="muted" className="iconline" style={{ marginTop: 10, fontStyle: 'italic' }}><FeatherIcon /> {entry.summary}</p>
             )}
             <div className="margin-notes">
               <ShareControls entryId={entry.id} current={entry.visibility} onChanged={onChanged} />
@@ -128,7 +129,7 @@ function EntryCard({ entry, onChanged }) {
                   </>
                 ) : (
                   <button className="quiet" onClick={() => setConfirming(true)} aria-label="Delete entry" title="Delete this entry everywhere">
-                    🗑 Burn this letter
+                    <TrashIcon /> Burn this letter
                   </button>
                 )}
               </div>
@@ -256,7 +257,7 @@ export default function Journal() {
       </section>
 
       <section className="card">
-        <div className="compose-cap"><span aria-hidden="true">✒</span> Pen a new letter to yourself</div>
+        <div className="compose-cap"><NibIcon /> Pen a new letter to yourself</div>
         <div className="row" style={{ flexWrap: 'wrap' }}>
           <HoldToTalk onRecorded={onRecorded} disabled={busy} />
           <button className="quiet" onClick={() => setTyping(!typing)}>
@@ -314,7 +315,7 @@ export default function Journal() {
 
       {entries.length === 0 ? (
         <div className="empty-state">
-          <span className="big" aria-hidden="true">🪔</span>
+          <span className="big" aria-hidden="true"><LampIcon /></span>
           अभी यहाँ कुछ नहीं है — nothing here yet.<br />Hold the button and just talk.
         </div>
       ) : (

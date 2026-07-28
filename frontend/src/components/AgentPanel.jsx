@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
+import { AGENT_ICON, GearIcon } from '../icons';
 
-const AGENT_ICONS = {
-  Conductor: '🧭',
-  Companion: '🪔',
-  Librarian: '📚',
-  Transcriber: '🎙',
-  Summarizer: '✍️',
-  Extractor: '🔎',
-  'Consent Guardian': '🛡️',
-  Alerter: '🔔',
-  Doer: '🎁',
-  Interpreter: '🌐',
-  Prompter: '🌱',
-  Radar: '📡',
-};
+function AgentGlyph({ agent }) {
+  const Icon = AGENT_ICON[agent] || GearIcon;
+  return <Icon />;
+}
 
 function timeAgo(ts) {
   const s = Math.max(0, Math.round(Date.now() / 1000 - ts));
@@ -76,7 +67,7 @@ export default function AgentPanel({ open, onClose }) {
             {events.map((e) => (
               <li key={e.id} className="agent-event">
                 <span className="agent-event-icon" aria-hidden="true">
-                  {AGENT_ICONS[e.agent] ?? '⚙️'}
+                  <AgentGlyph agent={e.agent} />
                 </span>
                 <div>
                   <div className="ev-name">{e.agent}</div>
